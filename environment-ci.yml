@@ -41,3 +41,9 @@ dependencies:
   - toml
   - pytest
   - pytest-timeout      # per-test wall-clock cap so a hang fails fast in CI
+  - pip
+  - pip:
+    - embreex  # ray casting for trimesh: fitter_3d/antscan_registration (status, recovery, overlays)
+    - threadpoolctl  # one BLAS thread inside a registration: bit-reproducible CPU runs
+  # Not installed here: scikit-learn==1.7.2 and numba (environment.yml). Only the slow end-to-end test of
+  # fitter_3d/antscan_joints needs them, and it skips without them; its fast tests run without both.

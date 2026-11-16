@@ -167,6 +167,7 @@ What happens:
 - **Render a video / run inference** from a checkpoint → [Inference](README.md#inference) (multi-view and single-view).
 - **Use your own footage** → [Dataset preprocessing](README.md#dataset-preprocessing) (SLEAP → HDF5).
 - **Build a new parametric model** for your own species/rig → [Adding new parametric models](README.md#adding-new-parametric-models) and [fitter_3d](fitter_3d/README.md).
+- **Register AntScan micro-CT scans of ant workers** (from the public meshes to registered meshes, morphometrics and the Blender add-on) → [AntScan workflow](docs/antscan_workflow.md).
 - **Understand the codebase** → [Repository structure](README.md#repository-structure) and [Architecture: two fitting approaches](README.md#architecture-two-fitting-approaches).
 - **Single-view** instead of multi-view → the same flow via `train_smil_regressor.py` / `run_singleview_inference.py`; see [smal_fitter/neuralSMIL/README.md](smal_fitter/neuralSMIL/README.md).
 
