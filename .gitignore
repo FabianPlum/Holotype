@@ -273,3 +273,6 @@ multiview_benchmarks_*/
 
 # Claude Code: project CLAUDE.md is tracked; machine-local settings are not.
 .claude/settings.local.json
+
+# fitter_3d/antscan_registration/parts is a source package; the generic "parts/" rule above is for build trees
+!fitter_3d/antscan_registration/parts/
