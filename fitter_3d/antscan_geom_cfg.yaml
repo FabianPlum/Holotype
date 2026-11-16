@@ -1,0 +1,17 @@
+# Joint-informed registration with the GEOMETRIC stage (fitter_3d/geom_stage.py): closed-form articulated start in the
+# fitter's own parameters, limb tube warp, part-aware surface stage, native parameters refitted to the result.
+# No skeleton stages and no free per-vertex deformation stages. Use with:
+#   optimise.py --mesh_dir M --joints_dir J --joint_kind medial --conf_min 0.3 --limbs_dir L --yaml_src fitter_3d/antscan_geom_cfg.yaml
+# (meshes in the proposals' canonical frame, as for antscan_joints_cfg.yaml). CPU is enough; the stage writes the usual
+# stage .npz plus geom_vertex_status / geom_part_status / geom_status / start_how. Unknown keys are an error.
+
+stages:
+  Stage_G_geom:
+    scheme: 'geom'
+    refit: true          # native parameters carry what they can; deform_verts = the residual
+    refit_betas: false   # true: also fit the shape coefficients to the registered mesh (ridge, shape covariance)
+    geom: {}             # options of geomreg.surface.OPTS; {'start': {...}} for geomreg.native.OPTS; device: 'cpu' | 'cuda'
+
+args:
+  results_dir: fit3d_results_antscan
+  shape_family_id: -1

@@ -64,6 +64,45 @@ parser.add_argument(
     "--sdf_dir", type=str, default="sdf_batch_output/data", help="Directory containing pre-computed SDF values"
 )
 
+# joint-informed registration (AntScan): meshes in the proposals' canonical frame, <name>_joints.json per mesh
+parser.add_argument(
+    "--joints_dir",
+    type=str,
+    default=None,
+    help="Directory with <name>_joints.json joint proposals; enables the joint term, the similarity initialisation "
+    "and the missing-part masks (use with fitter_3d/antscan_joints_cfg.yaml)",
+)
+
+parser.add_argument(
+    "--joint_kind",
+    type=str,
+    default="pivot",
+    choices=["pivot", "medial"],
+    help="What the proposals are: 'pivot' = model bone heads; 'medial' = articulation points on the scan's "
+    "medial axis (the joint method's products, annotated truth): the joint term then compares virtual markers of the mesh surface",
+)
+parser.add_argument(
+    "--conf_min",
+    type=float,
+    default=0.0,
+    help="Proposals below this confidence are not used (0 = weight by confidence)",
+)
+
+parser.add_argument(
+    "--limbs_dir",
+    type=str,
+    default=None,
+    help="Directory with <name>/limbs.json + limbs.npz (limb centrelines of the joint method): used by stages with "
+    "scheme 'geom' (limb tube warp, scan part labels, mandible tips) and by --native_start (mandible tips)",
+)
+parser.add_argument(
+    "--native_start",
+    action="store_true",
+    help="Initialise from the joint proposals with the closed-form articulated start in native parameters "
+    "(fitter_3d/geomreg/native.py: joint_rot, isotropic log_beta_scales and betas_trans per bone; never fails for lack "
+    "of root-rigid joints) instead of the similarity + IK initialisation. Default off = previous behaviour",
+)
+
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
@@ -95,7 +134,8 @@ def combine_stage_results(results_dir, stage_names, n_batches):
             else:
                 # Concatenate arrays for each parameter
                 for key in combined_data:
-                    if key != "faces":  # faces should be the same for all batches
+                    # faces are the same for all batches; 0-d entries (e.g. target_units) are per-run constants
+                    if key != "faces" and np.ndim(combined_data[key]) > 0:
                         combined_data[key] = np.concatenate([combined_data[key], batch_dict[key]], axis=0)
 
         if combined_data is not None:
@@ -181,6 +221,8 @@ def get_mesh_files(mesh_dir, frame_step=1):
 
 
 def main(args):
+    if getattr(args, "native_start", False) and getattr(args, "joints_dir", None) is None:
+        warnings.warn("--native_start needs --joints_dir (the joint proposals it starts from); it is ignored")
     # try to load yaml
     yaml_loaded = False
     if args.yaml_src is not None:
@@ -249,8 +291,13 @@ def main(args):
             batch_files = mesh_files[start_idx:end_idx]
             batch_mesh_names = [os.path.basename(f) for f in batch_files]
 
-            # Load meshes for just this batch
-            _, batch_target_meshes = load_meshes(mesh_files=batch_files, device=device)
+            # Load meshes for just this batch (keep the normalisation when results must map back to micrometres)
+            if args.joints_dir is not None:
+                _, batch_target_meshes, batch_norms = load_meshes(
+                    mesh_files=batch_files, device=device, return_norm=True
+                )
+            else:
+                _, batch_target_meshes = load_meshes(mesh_files=batch_files, device=device)
 
             # Load SDF values if enabled
             batch_sdf_values = None
@@ -273,6 +320,23 @@ def main(args):
                 plot_normals=args.plot_normals,
             )
 
+            if args.joints_dir is not None:
+                from fitter_3d.joint_init import prepare_batch
+
+                # initialises smal_model in place (similarity from the root-rigid joints, missing-part masks)
+                stage_kwargs.update(
+                    prepare_batch(
+                        smal_model,
+                        batch_mesh_names,
+                        batch_norms,
+                        args.joints_dir,
+                        device,
+                        joint_kind=args.joint_kind,
+                        conf_min=args.conf_min,
+                        **(dict(native_start=True, limbs_dir=args.limbs_dir) if args.native_start else {}),
+                    )
+                )
+
             # Add SDF values to stage kwargs if available
             if args.use_sdf:
                 if batch_sdf_values is not None:
@@ -284,7 +348,22 @@ def main(args):
             if yaml_loaded:
                 for stage_name, kwargs in stage_options.items():
                     batch_stage_name = f"{stage_name}_batch_{batch_idx}" if n_batches > 1 else stage_name
-                    stage = Stage(name=batch_stage_name, **kwargs, **stage_kwargs)
+                    # geometric registration stage (fitter_3d/geom_stage.py), optional
+                    if kwargs.get("scheme") == "geom":
+                        from fitter_3d.geom_stage import GeomStage, check_stage_options
+
+                        check_stage_options(kwargs)
+                        stage = GeomStage(
+                            name=batch_stage_name,
+                            joints_dir=args.joints_dir,
+                            limbs_dir=args.limbs_dir,
+                            joint_kind=args.joint_kind,
+                            conf_min=args.conf_min,
+                            **{k: v for k, v in kwargs.items() if k != "scheme"},
+                            **stage_kwargs,
+                        )
+                    else:
+                        stage = Stage(name=batch_stage_name, **kwargs, **stage_kwargs)
                     manager.add_stage(stage)
                     if batch_idx == 0:  # Only add stage names once
                         stage_names.append(stage_name)
