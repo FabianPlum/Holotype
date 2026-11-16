@@ -23,7 +23,10 @@ concurrency:
 jobs:
   pytest:
     name: pytest (CPU, torch 2.3.1)
-    runs-on: ubuntu-latest
+    # Pinned: since November 2026 ubuntu-latest resolves to the ubuntu-26.04 image, where `import torch` of the
+    # conda-forge torch 2.3.1 build fails ("libtorch_cpu.so: cannot enable executable stack as shared object
+    # requires: Invalid argument"). The last green runs used ubuntu-24.04. Unpin when the torch build is updated.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       PYTHONUNBUFFERED: "1"
