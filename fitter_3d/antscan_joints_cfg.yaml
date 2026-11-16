@@ -1,0 +1,55 @@
+# Joint-informed registration of AntScan meshes (use with --joints_dir; docs/antscan_registration_from_joints.md).
+# Same iteration budget as ants_cfg.yaml (100 / 300 / 1000 / 1000). Validated on the synthetic set (pivots 0.34 % body
+# length median with good joint proposals vs 2.1 % for ants_cfg.yaml with ground-truth pre-alignment). The joint weight assumes proposals better than ~1 % body length; with noisier
+# joints a surface-dominated Stage_1 (w_joint <= 0.003) was better.
+
+stages:
+  Stage_0_skeleton: # skeleton onto the proposals, no mesh terms
+    scheme: 'joint_skeleton'
+    nits: 100
+    lr: 0.01
+    loss_weights:
+      w_chamfer: 0.
+      w_edge: 0.
+      w_normal: 0.
+      w_laplacian: 0.
+      w_joint: 1.0
+      w_limit: 100.0
+
+  Stage_1_shape_pose: # surface fit with the skeleton as regulariser; global scale instead of per-joint scales
+    scheme: 'joint_default'
+    nits: 300
+    lr: 0.02
+    loss_weights:
+      w_chamfer: 1.
+      w_edge: 0.8
+      w_normal: 0.02
+      w_laplacian: 0.01
+      w_limit: 100.0
+      w_joint: 0.3
+    custom_lrs:
+      joint_rot: 0.002
+
+  Stage_2_deform_coarse:
+    scheme: 'deform'
+    nits: 1000
+    lr: 0.002
+    loss_weights:
+      w_chamfer: 1.
+      w_edge: 0.8
+      w_normal: 0.005
+      w_laplacian: 0.01
+
+  Stage_3_deform_fine:
+    scheme: 'deform'
+    nits: 1000
+    lr: 0.0005
+    loss_weights:
+      w_chamfer: 0.5
+      w_edge: 0.2
+      w_normal: 0.002
+      w_laplacian: 0.001
+
+args:
+  results_dir: fit3d_results_antscan
+  shape_family_id: -1

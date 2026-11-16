@@ -29,6 +29,22 @@ naming prefix. They are **not** SMPL and are unaffected by the above:
   models (55/49 joints, insect anatomy: coxa, trochanter, mandibles, abdomen
   segments). SMPL itself has 6890 vertices and 24 joints; these do not.
 - `3D_model_prep/SMIL_*.pkl`, `SMILy_*.pkl` — our ant, stick-insect and mouse models.
+- The data files of the AntScan tools ([docs/antscan_workflow.md](antscan_workflow.md)), made by us from our OmniAnt
+  model and from public [AntScan](https://biomedisa.info/antscan/) scans of ant workers. They contain no third-party
+  model and no scan geometry beyond averages over many specimens:
+  - `fitter_3d/antscan_joints/method/along/along_model.pkl` (5.4 MB; scikit-learn classifiers and priors of the joint
+    method), `method/paths_A/priors_final/priors_all_trunk.json` and `method/paths_C/contact_model.json`, fitted on
+    annotated joints of 21 scans. They cannot be rebuilt from the repository (see
+    [fitter_3d/antscan_joints/README.md](../fitter_3d/antscan_joints/README.md#data-files)).
+  - `fitter_3d/antscan_registration/data/population_prod82.json` (segment-length prior; specimens keyed by the md5 of
+    their name) and `data/rest_population.json` (mean rest mesh and median edge lengths over 78 registered scans),
+    rebuilt with `python -m fitter_3d.antscan_registration.build_data` from a run of the pipeline.
+  - `custom_processing/antscan_align_template_profile.json`, the thickness profile of the OmniAnt template used by the
+    orientation step.
+
+  The scans themselves are not in the repository. They are published by the AntScan project, whose website gives
+  their terms of use and how to cite them; work that uses these files or the meshes made with them should cite
+  AntScan as asked there.
 
 ## The history purge (done 2026-07-16)
 

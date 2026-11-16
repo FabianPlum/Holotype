@@ -34,7 +34,7 @@ Note: only the top-level `args:` block in the YAML (e.g. `results_dir`, `shape_f
 
 ## Schemes
 
-The `--scheme` choices are the keys of `SMALParamGroup.param_map` in [trainer.py](trainer.py) — **ten** schemes, each selecting which parameters are optimised:
+The `--scheme` choices are the keys of `SMALParamGroup.param_map` in [trainer.py](trainer.py) — **twelve** schemes, each selecting which parameters are optimised:
 
 | Scheme | Optimised parameters |
 |---|---|
@@ -48,10 +48,21 @@ The `--scheme` choices are the keys of `SMALParamGroup.param_map` in [trainer.py
 | `pose` | `global_rot`, `trans`, `joint_rot`, `betas`, `log_beta_scales`, `betas_trans` — i.e. `default` **plus** `betas_trans` (note: still **includes** the shape params) |
 | `deform` | `deform_verts` (per-vertex deformations only) |
 | `all` | everything above + `deform_verts` |
+| `joint_skeleton` | `global_rot`, `trans`, `log_scale`, `joint_rot` (joint-informed path, below) |
+| `joint_default` | `global_rot`, `joint_rot`, `trans`, `betas`, `log_scale` (joint-informed path, below) |
+
+`log_scale` is one global isotropic scale per mesh (`verts = exp(log_scale) * verts_model + trans`); it stays 0 in every other scheme. A YAML stage can also use `scheme: 'geom'`, which runs the closed-form geometric registration of `fitter_3d/geomreg` as one stage instead of an optimisation (see below).
 
 ## Output
 
-Results are written to `--results_dir` (default `fit3d_results/`) as per-stage `.npz` files (`<stage>.npz`, plus per-batch `<stage>_batch_<i>.npz`). Use [read_out_fitter_stages.py](read_out_fitter_stages.py) to load and inspect them. SDF-based registration is available via `--use_sdf` / `--sdf_dir`.
+Results are written to `--results_dir` (default `fit3d_results/`) as per-stage `.npz` files (`<stage>.npz`, plus per-batch `<stage>_batch_<i>.npz`). Use [read_out_fitter_stages.py](read_out_fitter_stages.py) to load and inspect them. SDF-based registration is available via `--use_sdf` / `--sdf_dir`. Besides the parameters, `verts`, `faces` and `labels`, every stage file holds `log_scale`, `rotation_mask` and `pivots` (the posed kinematic joints).
+
+## AntScan micro-CT scans: joint-informed registration
+
+For the AntScan scans of ant workers the repository has a separate registration pipeline built on the same model and the same stage-file format: [docs/antscan_workflow.md](../docs/antscan_workflow.md) walks from the downloaded meshes to registered meshes. Inside `optimise.py` it adds options that are all off by default, so existing configurations write the same arrays as before (their stage files only gain the keys `log_scale`, `rotation_mask` and `pivots`; `SMAL3DFitter.rotation_mask` now has one row per mesh, shape `(B, N_POSE, 3)`, and is applied in the forward pass):
+
+- `--joints_dir` (with [antscan_joints_cfg.yaml](antscan_joints_cfg.yaml)): joint proposals add a joint term, a similarity initialisation and missing-part masks, and the stage files keep the physical scale (`target_centre`, `target_scale`, `target_units`, `target_frame_rotation`, `target_frame_origin`). `--joint_kind medial` and `--conf_min` match the proposals of the joint method `fitter_3d/antscan_joints`.
+- `--limbs_dir`, `--native_start` and `scheme: 'geom'` ([antscan_geom_cfg.yaml](antscan_geom_cfg.yaml)): the registration core of the pipeline as an initialisation or as a stage; see [docs/antscan_geom_stage.md](../docs/antscan_geom_stage.md).
 
 
 

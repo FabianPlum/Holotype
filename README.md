@@ -37,9 +37,9 @@ Example 4-5 camera inference results with a model trained on data collected from
 | [`smal_fitter/fitter.py`](smal_fitter/fitter.py) | **Optimization-based fitting** (`SMALFitter`, an `nn.Module`) — see *Architecture* below. |
 | [`smal_fitter/sleap_data/`](smal_fitter/sleap_data/) | SLEAP multi-view preprocessing toolchain + dataset loaders. |
 | [`smal_model/`](smal_model/) | The SMAL/SMIL parametric model (differentiable linear-blend skinning). |
-| [`fitter_3d/`](fitter_3d/) | 3D **mesh registration** — fits a template model to target `.obj` meshes (used when building new parametric models). |
+| [`fitter_3d/`](fitter_3d/) | 3D **mesh registration** — fits a template model to target `.obj` meshes (used when building new parametric models). Also holds the AntScan joint method and registration pipeline (see [docs/antscan_workflow.md](docs/antscan_workflow.md)). |
 | [`3D_model_prep/`](3D_model_prep/) | Blender files + the SMIL addon for creating/editing parametric `.pkl` models. |
-| [`custom_processing/`](custom_processing/) | Model-preprocessing helpers (mesh registration, beta regressors). |
+| [`custom_processing/`](custom_processing/) | Model-preprocessing helpers (mesh registration, beta regressors, AntScan mesh preparation and proofreading). |
 | [`config.py`](config.py) | Legacy root config — still required by `fitter_3d` and `optimize_to_joints.py`. |
 | [`legacy/`](legacy/) | The deprecated SMALify-derived optimization workflow (see [legacy/README.md](legacy/README.md)). |
 | [`tests/`](tests/) | Pytest suite (see [tests/README.md](tests/README.md)). |
@@ -418,6 +418,8 @@ The addon panel provides a single interface for importing existing SMIL/SMAL `.p
    ```
 
    <img src="docs/ant_registered_meshes.gif" width="800">
+
+   For the public [AntScan](https://biomedisa.info/antscan/) micro-CT scans of ant workers there is a dedicated route: mesh preparation and proofreading, joint proposals, and a registration with a status per body part, morphometrics in micrometres and unposed meshes ready for step 3. See the [AntScan workflow](docs/antscan_workflow.md).
 
 3. **Load registrations into the addon** — back in Blender, import the template `.pkl` alongside the registration `.npz` via "Direct Import SMIL Model". Alternatively, for more control, use "Load all unposed registered meshes" to bring every registration into the scene as a separate rigged mesh for visual inspection, followed by "Generate SMIL model from unposed meshes" to build the final model.
 

@@ -298,7 +298,15 @@ def stack_as_batch(tensor: torch.Tensor, n_repeats=1, dim=0) -> torch.Tensor:
     return res
 
 
-def load_meshes(mesh_dir=None, mesh_files=None, sorting=lambda arr: arr, n_meshes=None, frame_step=1, device="cuda:0"):
+def load_meshes(
+    mesh_dir=None,
+    mesh_files=None,
+    sorting=lambda arr: arr,
+    n_meshes=None,
+    frame_step=1,
+    device="cuda:0",
+    return_norm=False,
+):
     """Given a dir of .obj files or a list of .obj files, loads all and returns mesh names, and meshes as Mesh object.
 
     :param mesh_dir: Location of directory of .obj files (mutually exclusive with mesh_files)
@@ -307,14 +315,18 @@ def load_meshes(mesh_dir=None, mesh_files=None, sorting=lambda arr: arr, n_meshe
     :param n_meshes: Optional slice of first n_meshes in sorted dir
     :param frame_step: For animations, optional step through sorted dir (only used with mesh_dir)
     :param device: torch device
+    :param return_norm: also return the per-mesh normalisation (x_file = x_norm * scale + centre), so results can be
+        mapped back to the file's units (micrometres for AntScan meshes)
 
     :returns mesh_names: list of all names of mesh files loaded
     :returns target_meshes: PyTorch3D Meshes object of all loaded meshes
+    :returns norms: (only with return_norm) list of {"centre": (3,) array, "scale": float}
     """
 
     # load all meshes
     mesh_names = []
     all_verts, all_faces_idx = [], []
+    norms = []
 
     if mesh_dir is not None and mesh_files is not None:
         raise ValueError("Cannot specify both mesh_dir and mesh_files")
@@ -342,6 +354,7 @@ def load_meshes(mesh_dir=None, mesh_files=None, sorting=lambda arr: arr, n_meshe
         verts = verts - centre
         scale = max(verts.abs().max(0)[0])
         verts = verts / scale
+        norms.append({"centre": centre.detach().cpu().numpy().astype(np.float64), "scale": float(scale)})
 
         # ROTATE TARGET MESH TO GET IN DESIRED DIRECTION - UNCOMMENT IF USING
         # R1 = cartesian_rotation("z", np.pi/2).to(device)
@@ -355,6 +368,8 @@ def load_meshes(mesh_dir=None, mesh_files=None, sorting=lambda arr: arr, n_meshe
 
     target_meshes = Meshes(verts=all_verts, faces=all_faces_idx)  # All loaded target meshes together
 
+    if return_norm:
+        return mesh_names, target_meshes, norms
     return mesh_names, target_meshes
 
 

@@ -25,8 +25,8 @@ from smal_fitter.priors.joint_limits_prior import _ranges_from_joint_limits
 nn = torch.nn
 
 default_weights = dict(
-    w_chamfer=1.0, w_edge=1.0, w_normal=0.01, w_laplacian=0.1, w_sdf=0.5, w_limit=0.0
-)  # Added SDF distance weight; w_limit off by default (issue #97)
+    w_chamfer=1.0, w_edge=1.0, w_normal=0.01, w_laplacian=0.1, w_sdf=0.5, w_limit=0.0, w_joint=0.0
+)  # Added SDF distance weight; w_limit off by default (issue #97); w_joint needs target_joints (AntScan)
 # Want to vary learning ratios between parameters,
 default_lr_ratios = []
 
@@ -131,6 +131,11 @@ class SMAL3DFitter(nn.Module):
         trans = torch.FloatTensor([0.0, 0.0, 0.0])[None, :].to(device).repeat(batch_size, 1)  # Trans Init
         self.trans = nn.Parameter(trans)
 
+        # Global isotropic scale: verts = exp(log_scale) * verts_model + trans (same for joints and pivots).
+        # 0 = unscaled; only optimised by the schemes that list it, so existing configs are unaffected.
+        self.log_scale = nn.Parameter(torch.zeros(batch_size, 1).to(device))
+        self.pivots = None  # posed kinematic joints of the last forward pass (exp(log_scale) * J_transformed + trans)
+
         default_joints = torch.zeros(batch_size, config.N_POSE, 3).to(device)
         self.joint_rot = nn.Parameter(default_joints)
 
@@ -151,10 +156,10 @@ class SMAL3DFitter(nn.Module):
         self.global_mask = torch.ones(1, 3).to(device)
         # self.global_mask[:2] = 0.0
 
-        # Can be used to prevent certain joints rotating.
-        # Can be useful depending on sequence.
-        self.rotation_mask = torch.ones(config.N_POSE, 3).to(device)  # by default all joints are free to rotate
-        # self.rotation_mask[25:32] = 0.0 # e.g. stop the tail moving
+        # Can be used to prevent certain joints rotating (per mesh), e.g. the bones of a broken-off part.
+        # Applied in forward(): joint_rot * rotation_mask.
+        self.rotation_mask = torch.ones(batch_size, config.N_POSE, 3).to(device)  # by default all joints are free
+        # self.rotation_mask[:, 25:32] = 0.0 # e.g. stop the tail moving
 
         # setup SMAL skinning & differentiable renderer
         self.smal_model = SMAL(device, shape_family_id=shape_family)
@@ -220,6 +225,11 @@ class SMAL3DFitter(nn.Module):
             deform_verts (optional): Vertex offsets, tensor of shape (batch_size, n_template_verts, 3).
             return_joints (bool): Whether to return joints.
 
+        Always taken from the module (no argument): joint rotations are multiplied by self.rotation_mask
+        (batch_size, N_POSE, 3; all ones by default), and verts and joints are scaled by exp(self.log_scale)
+        (batch_size, 1; zero by default, so the scale is exactly 1) before trans is added. Side effect: self.pivots
+        is set to the posed kinematic joints of this pass, scaled and translated the same way.
+
         Returns:
             verts: Predicted vertices, tensor of shape (batch_size, n_verts, 3).
             joints: Predicted joints, tensor of shape (batch_size, n_joints, 3), if return_joints is True.
@@ -228,7 +238,7 @@ class SMAL3DFitter(nn.Module):
         # Determine which parameters to use (passed argument or self.attribute)
         _betas = betas if betas is not None else self.betas
         _global_rot = global_rot if global_rot is not None else self.global_rot
-        _joint_rot = joint_rot if joint_rot is not None else self.joint_rot
+        _joint_rot = (joint_rot if joint_rot is not None else self.joint_rot) * self.rotation_mask
         _trans = trans if trans is not None else self.trans
         # Use provided log_beta_scales if available, otherwise use the internal one.
         # This will be passed to get_joint_scales and directly to smal_model if needed.
@@ -264,8 +274,10 @@ class SMAL3DFitter(nn.Module):
             betas_trans=_betas_trans,
         )  # Pass the joint translation offsets
 
-        verts = verts + _trans.unsqueeze(1)  # _trans is (bs, 3) -> (bs, 1, 3)
-        joints = joints + _trans.unsqueeze(1)
+        s = torch.exp(self.log_scale).unsqueeze(-1)  # (bs, 1, 1); exactly 1 unless log_scale is optimised
+        verts = s * verts + _trans.unsqueeze(1)  # _trans is (bs, 3) -> (bs, 1, 3)
+        joints = s * joints + _trans.unsqueeze(1)
+        self.pivots = s * self.smal_model.J_transformed + _trans.unsqueeze(1)
 
         verts = verts + _deform_verts  # _deform_verts is (bs, n_template_verts, 3)
 
@@ -289,6 +301,10 @@ class SMALParamGroup:
         "pose": ["global_rot", "trans", "joint_rot", "betas", "log_beta_scales", "betas_trans"],
         "deform": ["deform_verts"],
         "all": ["global_rot", "trans", "joint_rot", "betas", "log_beta_scales", "betas_trans", "deform_verts"],
+        # joint-informed registration (AntScan): global log_scale instead of per-joint log_beta_scales, whose root
+        # entry has inverted semantics (smal_model/batch_lbs.py S_parent^-1 R S_child)
+        "joint_skeleton": ["global_rot", "trans", "log_scale", "joint_rot"],
+        "joint_default": ["global_rot", "joint_rot", "trans", "betas", "log_scale"],
     }  # map of param_type : all attributes in SMAL used in optim
 
     def __init__(self, model, group="smbld", lrs=None):
@@ -343,6 +359,13 @@ class Stage:
         source_sdf_values=None,
         visualize_sdf_loss=False,
         sdf_vis_frequency=10,
+        target_joints=None,
+        joint_weights=None,
+        body_length=None,
+        joint_sigma=0.02,
+        src_keep=None,
+        target_norm=None,
+        joint_ref_regressor=None,
     ):
         """
         nits = integer, number of iterations in stage
@@ -351,6 +374,14 @@ class Stage:
         name = name of stage
         visualize_sdf_loss = whether to visualize SDF loss contribution
         sdf_vis_frequency = how often to visualize SDF loss (every N iterations)
+        target_joints = (B, J, 3) proposed joint positions in the normalised target frame (w_joint > 0)
+        joint_weights = (B, J) per-joint weights (confidence; 0 for null, wings and missing joints)
+        body_length = (B,) body length in normalised units; joint residuals are divided by it
+        joint_sigma = Geman-McClure width as a fraction of the body length
+        src_keep = (B, V) bool, model vertices used as chamfer source (False = bones of a missing part)
+        target_norm = optional dict of arrays written by save_npz (e.g. target_centre, target_scale, target_rotation)
+        joint_ref_regressor = optional (J, V): the joint term compares joint_ref_regressor @ mesh vertices (virtual
+            markers, joint_kind 'medial') instead of the pivots; also acts in deformation stages
 
         lr_decay = factor by which lr decreases at each it"""
 
@@ -380,6 +411,21 @@ class Stage:
 
         self.losses_to_plot = []  # Store losses for review later
 
+        # joint term and chamfer source mask (joint-informed registration); all None = previous behaviour
+        self.target_joints, self.joint_weights, self.body_length = target_joints, joint_weights, body_length
+        self.joint_sigma = joint_sigma
+        self.joint_ref_regressor = joint_ref_regressor
+        if self.loss_weights["w_joint"] > 0 and joint_ref_regressor is None and "deform" in scheme:
+            print(f"WARNING: stage {name}: w_joint with pivots has no effect on deform_verts (use joint_kind medial)")
+        self.target_norm = target_norm
+        self.keep_idx = self.keep_len = None
+        if src_keep is not None:
+            keep = [torch.nonzero(k, as_tuple=False)[:, 0] for k in torch.as_tensor(src_keep, device=device)]
+            self.keep_len = torch.tensor([len(k) for k in keep], device=device)
+            self.keep_idx = torch.zeros(len(keep), int(self.keep_len.max()), dtype=torch.long, device=device)
+            for b, k in enumerate(keep):
+                self.keep_idx[b, : len(k)] = k
+
         if custom_lrs is not None:
             for attr in custom_lrs:
                 assert hasattr(smal_3d_fitter, attr), f"attr '{attr}' not in SMAL."
@@ -406,9 +452,28 @@ class Stage:
         target_verts = sample_points_from_meshes(self.target_meshes, 3000)
 
         if self.consider_loss("chamfer"):
-            loss_chamfer, _ = chamfer_distance(target_verts, src_mesh.verts_padded())
+            src = src_mesh.verts_padded()
+            if self.keep_idx is not None:  # vertices of missing parts are not matched to the scan
+                src = torch.gather(src, 1, self.keep_idx.unsqueeze(-1).expand(-1, -1, 3))
+                loss_chamfer, _ = chamfer_distance(target_verts, src, y_lengths=self.keep_len)
+            else:
+                loss_chamfer, _ = chamfer_distance(target_verts, src)
             loss_components["chamfer"] = loss_chamfer
             loss += self.loss_weights["w_chamfer"] * loss_chamfer
+
+        if self.consider_loss("joint") and self.target_joints is not None:
+            # robust (Geman-McClure) distance of the posed pivots (or virtual markers) to the proposed joints, in body
+            # lengths
+            if self.joint_ref_regressor is None:
+                ref = self.smal_3d_fitter.pivots
+            else:
+                ref = torch.einsum("jv,bvc->bjc", self.joint_ref_regressor, src_mesh.verts_padded())
+            d2 = ((ref - self.target_joints) ** 2).sum(-1) / self.body_length.view(-1, 1) ** 2
+            rho = d2 / (d2 + self.joint_sigma**2)
+            w = self.joint_weights
+            loss_joint = ((w * rho).sum(1) / w.sum(1).clamp(min=1e-8)).mean()
+            loss_components["joint"] = loss_joint
+            loss += self.loss_weights["w_joint"] * loss_joint
 
         if self.consider_loss("edge"):
             loss_edge = mesh_edge_loss(src_mesh)  # and (b) the edge length of the predicted mesh
@@ -540,11 +605,24 @@ class Stage:
         labels: optional list of size n_batch, to save as labels for all entries"""
 
         out = {}
-        for param in ["global_rot", "joint_rot", "betas", "log_beta_scales", "trans", "deform_verts", "betas_trans"]:
+        for param in [
+            "global_rot",
+            "joint_rot",
+            "betas",
+            "log_beta_scales",
+            "trans",
+            "deform_verts",
+            "betas_trans",
+            "log_scale",
+        ]:
             out[param] = getattr(self.smal_3d_fitter, param).cpu().detach().numpy()
+        out["rotation_mask"] = self.smal_3d_fitter.rotation_mask.cpu().numpy()
 
         v = self.smal_3d_fitter()
         out["verts"] = v.cpu().detach().numpy()
+        out["pivots"] = self.smal_3d_fitter.pivots.cpu().detach().numpy()  # normalised target frame
+        if self.target_norm is not None:  # x_file = x_norm * target_scale + target_centre (then frame rotation)
+            out.update({k: np.asarray(v) for k, v in self.target_norm.items()})
         out["faces"] = self.faces.cpu().detach().numpy()
         out["labels"] = labels
 
@@ -600,6 +678,8 @@ class StageManager:
 
         # Create a subplot for each loss component
         n_components = len(all_components)
+        if n_components == 0:  # e.g. a schedule of closed-form stages only (scheme 'geom'): nothing to plot
+            return
         fig, axes = plt.subplots(n_components, 1, figsize=(10, 4 * n_components))
         if n_components == 1:
             axes = [axes]

@@ -14,7 +14,9 @@
 # pytorch3d=0.7.7 below.
 #
 # Only the core deep-learning stack is pinned (PyTorch3D must match the torch/CUDA build);
-# the scientific/IO packages float to whatever recent build conda resolves. Optional tooling
+# the scientific/IO packages float to whatever recent build conda resolves. The exceptions are
+# scikit-learn (pip section), pinned because the AntScan joint method ships a model pickled with it, and numba, held to
+# the minor version the AntScan joint products were made with (it also bounds the numpy pip may pull). Optional tooling
 # (dataset viewer, AntScan scraper, SDF tests) is listed commented-out at the bottom —
 # install only if needed.
 
@@ -55,6 +57,10 @@ dependencies:
     - opencv-python
     - nibabel
     - toml
+    - embreex  # ray casting for trimesh: fitter_3d/antscan_registration and fitter_3d/antscan_joints
+    - threadpoolctl  # one BLAS thread inside a registration: bit-reproducible CPU runs
+    - scikit-learn==1.7.2  # pinned: fitter_3d/antscan_joints loads a classifier pickled with this version (checked at load time)
+    - numba==0.66.*  # voxelisers of fitter_3d/antscan_joints (production ran 0.66.0)
 
 # --- optional extras (uncomment what you need) ------------------------------
 #   Interactive multi-view dataset viewer (smal_fitter/multiview_common/dataset_viewer.py):
