@@ -5,16 +5,17 @@ import argparse
 from tqdm import tqdm
 
 
-def find_stl_files(root_dir):
-    """Find all STL files in the given directory and its subdirectories."""
+def find_stl_files(root_dir, extensions=(".stl",)):
+    """Find all model files with the given extensions in the directory and its subdirectories."""
+    extensions = tuple(e.lower() for e in extensions)
     stl_files = []
     for dirpath, dirnames, filenames in os.walk(root_dir):
-        for filename in filenames:
-            if filename.lower().endswith(".stl"):
+        for filename in sorted(filenames):
+            if filename.lower().endswith(extensions):
                 stl_file = os.path.join(dirpath, filename)
-                print(f"Found STL file: {stl_file}")
+                print(f"Found model file: {stl_file}")
                 stl_files.append(stl_file)
-    print(f"Total STL files found: {len(stl_files)}")
+    print(f"Total model files found: {len(stl_files)}")
     return stl_files
 
 
@@ -38,7 +39,7 @@ def process_stl_wrapper(args):
 
 def main(args):
     print(f"Searching for STL files in: {args.input_dir}")
-    stl_files = find_stl_files(args.input_dir)
+    stl_files = find_stl_files(args.input_dir, args.extensions)
     if not stl_files:
         print("No STL files found. Exiting.")
         return
@@ -63,6 +64,13 @@ if __name__ == "__main__":
     parser.add_argument("--blender_path", type=str, required=True, help="Path to Blender executable")
     parser.add_argument("--script_path", type=str, required=True, help="Path to Blender Python script")
     parser.add_argument(
+        "--extensions",
+        type=str,
+        nargs="+",
+        default=[".stl"],
+        help="Model file extensions to process (e.g. .glb for Sketchfab downloads)",
+    )
+    parser.add_argument(
         "--num_processes",
         type=int,
         default=int(multiprocessing.cpu_count() / 2),
@@ -72,5 +80,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     main(args)
 
-# example command
+# example commands
+# Sketchfab downloads (glb), see prepare_sketchfab_models_for_mesh_fitting.py:
+# python custom_processing/batch_process_models.py --input_dir <downloads> --output_dir <processed> --blender_path <blender> --script_path custom_processing/prepare_sketchfab_models_for_mesh_fitting.py --extensions .glb
+# AntScan (stl):
 # python batch_process_models.py --input_dir /home/fabi/dev/SMILify/custom_processing/antscan_data/ --output_dir /home/fabi/dev/SMILify/custom_processing/antscan_processed --blender_path /home/fabi/blender/blender --script_path /home/fabi/dev/SMILify/custom_processing/prepare_antscan_data_for_mesh_fitting.py
