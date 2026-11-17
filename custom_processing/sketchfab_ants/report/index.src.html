@@ -1,0 +1,923 @@
+<title>OmniAnt Fit Atlas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: an entomology drawer opens the page (the 135 fitted specimens are the data), then a numbered
+   method strip, then analysis sections in one 1180px column with full-width figures. */
+:root {
+  --paper: #f3f4f1; --card: #fcfcfb; --ink: #0f1110; --ink-2: #4b4e4b; --ink-3: #85877f;
+  --rule: #dfe0da; --grid: #e6e6e0; --axis: #c3c2b7;
+  --model: #2a78d6; --heat: #eb6834; --wash: rgba(42, 120, 214, 0.12);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s0: #b5b4ad;
+  --tray: #e8eae5; --tray-line: #d6d8d2; --label: #fbfbf8;
+  --f-display: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --col: 1180px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #101211; --card: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #898781;
+    --rule: #2c2c2a; --grid: #2a2a28; --axis: #3d3d3a;
+    --model: #3987e5; --heat: #d95926; --wash: rgba(57, 135, 229, 0.18);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s0: #5c5b56;
+    --tray: #171918; --tray-line: #262826; --label: #222423;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #101211; --card: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --ink-3: #898781;
+  --rule: #2c2c2a; --grid: #2a2a28; --axis: #3d3d3a;
+  --model: #3987e5; --heat: #d95926; --wash: rgba(57, 135, 229, 0.18);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s0: #5c5b56;
+  --tray: #171918; --tray-line: #262826; --label: #222423;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink); font: 400 16px/1.6 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 48px;
+}
+a { color: var(--model); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--model); outline-offset: 2px; border-radius: 3px;
+}
+.wrap { max-width: var(--col); margin: 0 auto; }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(2.4rem, 6vw, 4rem); font-weight: 700; line-height: 1.02; }
+h2 { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 600; line-height: 1.15; }
+h3 { font-size: 1.1rem; font-weight: 600; line-height: 1.3; }
+p { margin: 0; max-width: 68ch; }
+i { font-style: italic; }
+.eyebrow { font: 500 0.72rem/1.4 var(--f-mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); }
+.muted { color: var(--ink-3); }
+.mono { font-family: var(--f-mono); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- hero ---------- */
+.hero { padding-block: 40px 28px; display: grid; gap: 22px; }
+.hero .dek { font-size: 1.15rem; color: var(--ink-2); max-width: 62ch; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px 22px; font: 400 0.8rem/1.5 var(--f-mono); color: var(--ink-2); }
+.facts b { color: var(--ink); font-weight: 500; }
+nav.toc { display: flex; flex-wrap: wrap; gap: 6px 16px; font: 500 0.78rem/1.4 var(--f-mono); }
+nav.toc a { color: var(--ink-2); text-decoration: none; border-bottom: 1px solid var(--rule); padding-bottom: 2px; }
+nav.toc a:hover { color: var(--ink); border-color: var(--ink-3); }
+
+.drawer { background: var(--tray); border: 1px solid var(--tray-line); border-radius: 6px; padding: 14px; }
+.drawer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 1px; background: var(--tray-line); border: 1px solid var(--tray-line); }
+.spec { appearance: none; border: 0; margin: 0; padding: 4px 4px 6px; background: var(--tray); cursor: pointer; display: grid; justify-items: center; gap: 2px; min-width: 0; }
+.spec img { width: 100%; max-width: 100px; aspect-ratio: 1; display: block; transition: transform 0.15s ease; }
+.spec:hover img, .spec:focus-visible img { transform: scale(1.12); }
+.spec .lab { font: 400 0.62rem/1.2 var(--f-mono); color: var(--ink-2); background: var(--label); border: 1px solid var(--tray-line); padding: 1px 4px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-style: italic; }
+.drawer-cap { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 10px; font: 400 0.75rem/1.4 var(--f-mono); color: var(--ink-2); }
+
+/* ---------- sections ---------- */
+.sec { padding-block: 56px 8px; border-top: 1px solid var(--rule); margin-top: 40px; display: grid; gap: 22px; }
+.sec-head { display: grid; gap: 10px; }
+.lede { color: var(--ink-2); }
+.fig { background: var(--card); border: 1px solid var(--rule); border-radius: 6px; padding: 18px; display: grid; gap: 12px; min-width: 0; }
+.fig-title { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.fig-title h3 { font-size: 1rem; }
+.fig .cap { font-size: 0.88rem; color: var(--ink-2); max-width: 80ch; }
+.chart { width: 100%; min-width: 0; position: relative; }
+.chart svg { display: block; overflow: visible; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 18px; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.8rem; color: var(--ink-2); align-items: center; }
+.legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.legend .ln { display: inline-block; width: 16px; height: 2px; margin-right: 6px; vertical-align: 3px; border-radius: 1px; }
+.heatbar { display: grid; gap: 4px; font: 400 0.72rem/1.3 var(--f-mono); color: var(--ink-2); width: min(100%, 320px); }
+.heatbar .bar { height: 8px; border-radius: 4px; }
+.heatbar .ticks { display: flex; justify-content: space-between; }
+
+/* pipeline */
+.pipe { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 12px; counter-reset: step; }
+.step { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.step img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: var(--card); border: 1px solid var(--rule); border-radius: 6px; }
+.step .k { font: 500 0.72rem/1.3 var(--f-mono); color: var(--ink-3); }
+.step .k::before { counter-increment: step; content: counter(step) " · "; color: var(--ink); }
+.step h3 { font-size: 0.95rem; }
+.step p { font-size: 0.82rem; color: var(--ink-2); }
+.step .val { font: 400 0.75rem/1.4 var(--f-mono); color: var(--ink-2); }
+
+/* atlas + failures */
+.atlas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; }
+.atlas figure, .fails figure { margin: 0; display: grid; gap: 6px; min-width: 0; }
+.atlas img { width: 100%; height: auto; }
+.atlas figcaption, .fails figcaption { font-size: 0.82rem; color: var(--ink-2); }
+.fails { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.fails .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.fails img { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; }
+
+/* gallery */
+.controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; }
+.controls label { display: grid; gap: 4px; font: 500 0.7rem/1.2 var(--f-mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-3); }
+.controls input, .controls select { font: 400 0.9rem/1.2 var(--f-body); color: var(--ink); background: var(--card); border: 1px solid var(--axis); border-radius: 5px; padding: 7px 9px; min-width: 0; max-width: 100%; }
+.controls input[type="search"] { width: 220px; }
+.controls .check { display: flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: 0; font: 400 0.88rem/1.2 var(--f-body); color: var(--ink-2); }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 12px; }
+.tile { background: var(--card); border: 1px solid var(--rule); border-radius: 6px; padding: 8px 10px 10px; display: grid; gap: 6px; min-width: 0; }
+.tile img { width: 100%; aspect-ratio: 3 / 1; height: auto; display: block; }
+.tile .nm { font-size: 0.92rem; font-weight: 500; overflow-wrap: anywhere; }
+.tile .meta { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font: 400 0.72rem/1.4 var(--f-mono); color: var(--ink-2); }
+.tile-cols { display: grid; grid-template-columns: repeat(3, 1fr); font: 400 0.68rem/1.3 var(--f-mono); color: var(--ink-3); text-align: center; gap: 4px; }
+
+/* PCs */
+.pcs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); gap: 16px; }
+.pc { background: var(--card); border: 1px solid var(--rule); border-radius: 6px; padding: 16px; display: grid; gap: 10px; min-width: 0; }
+.pc-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.pc-head .pct { font: 500 0.8rem/1 var(--f-mono); color: var(--ink-2); }
+.pc-ends { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pc-ends figure { margin: 0; display: grid; gap: 4px; min-width: 0; }
+.pc-ends img { width: 100%; height: auto; display: block; }
+.pc-ends figcaption { font-size: 0.8rem; color: var(--ink-2); }
+.pc-ends .sig { font: 500 0.72rem/1.2 var(--f-mono); color: var(--ink); }
+.pc dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 0.82rem; }
+.pc dt { font: 500 0.7rem/1.6 var(--f-mono); text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-3); }
+.pc dd { margin: 0; color: var(--ink-2); min-width: 0; }
+.btn { appearance: none; font: 500 0.82rem/1 var(--f-body); color: var(--ink); background: var(--card); border: 1px solid var(--axis); border-radius: 5px; padding: 8px 12px; cursor: pointer; }
+.btn:hover { border-color: var(--ink-3); }
+.btn.primary { background: var(--model); border-color: var(--model); color: #fff; }
+
+/* viewer */
+.viewer { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; }
+@media (max-width: 820px) { .viewer { grid-template-columns: minmax(0, 1fr); } }
+.v-canvas { position: relative; width: 100%; aspect-ratio: 4 / 3; max-height: 620px; background: var(--card); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+.v-canvas canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.v-canvas .poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; padding: 24px; }
+.v-canvas.live .poster { display: none; }
+.v-hint { position: absolute; left: 12px; bottom: 10px; font: 400 0.7rem/1.3 var(--f-mono); color: var(--ink-3); pointer-events: none; }
+.v-read { position: absolute; left: 12px; top: 10px; right: 12px; display: grid; gap: 2px; pointer-events: none; }
+.v-read .who { font-weight: 600; font-size: 0.95rem; }
+.v-read .what { font: 400 0.72rem/1.3 var(--f-mono); color: var(--ink-2); }
+.v-panel { display: grid; gap: 14px; align-content: start; min-width: 0; }
+.slider { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; }
+.slider label { font-size: 0.82rem; color: var(--ink-2); }
+.slider label b { font: 500 0.75rem/1 var(--f-mono); color: var(--ink); margin-right: 4px; }
+.slider output { font: 500 0.75rem/1 var(--f-mono); color: var(--ink); min-width: 46px; text-align: right; }
+.slider input { grid-column: 1 / -1; width: 100%; accent-color: var(--model); }
+.seg { display: flex; flex-wrap: wrap; gap: 4px; }
+.seg button { appearance: none; font: 500 0.75rem/1 var(--f-body); color: var(--ink-2); background: var(--card); border: 1px solid var(--axis); border-radius: 5px; padding: 7px 9px; cursor: pointer; }
+.seg button[aria-pressed="true"] { color: var(--ink); border-color: var(--ink); }
+.v-panel select { width: 100%; font: 400 0.88rem/1.2 var(--f-body); color: var(--ink); background: var(--card); border: 1px solid var(--axis); border-radius: 5px; padding: 7px 9px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* tables */
+details.tbl summary { cursor: pointer; font-weight: 500; }
+.tbl-wrap { overflow-x: auto; margin-top: 10px; }
+table { border-collapse: collapse; font-size: 0.82rem; width: 100%; min-width: 760px; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th { font: 500 0.7rem/1.3 var(--f-mono); text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-3); cursor: pointer; position: sticky; top: 0; background: var(--card); }
+td.n { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--f-mono); }
+th.n { text-align: right; }
+
+/* method */
+.method { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 18px 32px; font-size: 0.9rem; color: var(--ink-2); }
+.method h3 { font-size: 0.95rem; color: var(--ink); margin-bottom: 4px; }
+.method code { font: 400 0.8rem/1.4 var(--f-mono); background: var(--card); border: 1px solid var(--rule); border-radius: 3px; padding: 0 4px; overflow-wrap: anywhere; }
+footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--rule); font-size: 0.82rem; color: var(--ink-3); display: grid; gap: 6px; }
+
+/* svg chart text */
+.ax { font: 400 11px/1 var(--f-mono); fill: var(--ink-3); }
+.ax-t { font: 500 11px/1 var(--f-mono); fill: var(--ink-2); }
+.lbl { font: 500 12px/1 var(--f-body); fill: var(--ink); }
+.lbl2 { font: 400 11px/1 var(--f-body); fill: var(--ink-2); }
+.gl { stroke: var(--grid); stroke-width: 1; }
+.bl { stroke: var(--axis); stroke-width: 1; }
+
+#tip { position: fixed; z-index: 50; pointer-events: none; max-width: 300px; background: var(--card); color: var(--ink); border: 1px solid var(--axis); border-radius: 6px; padding: 8px 10px; font-size: 0.8rem; line-height: 1.45; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12); }
+#tip .t-sub { color: var(--ink-2); font-size: 0.75rem; }
+#tip .t-num { font-family: var(--f-mono); font-size: 0.75rem; color: var(--ink-2); }
+#tip img { width: 120px; height: 120px; display: block; margin: 2px auto 4px; }
+@media (prefers-reduced-motion: reduce) { .spec img { transition: none; } }
+</style>
+
+<header class="wrap hero">
+  <div class="eyebrow">Holotype · fitter_3d · run of 15 November 2026</div>
+  <h1>OmniAnt Fit Atlas</h1>
+  <p class="dek">One parametric ant model, registered to 135 ant species modelled by tunosemi. How closely it fits, where it falls short, and the main ways the species differ once pose is taken away.</p>
+  <div class="facts" id="facts"></div>
+  <nav class="toc" aria-label="Sections">
+    <a href="#pipeline">Fitting steps</a><a href="#quality">Fit quality</a><a href="#specimens">Every specimen</a>
+    <a href="#variation">Axes of variation</a><a href="#explore">3D explorer</a><a href="#morphospace">Morphospace</a>
+    <a href="#segments">Segment sizes</a><a href="#method">Method</a>
+  </nav>
+  <div class="drawer" id="drawer">
+    <div class="drawer-grid" id="drawer-grid"></div>
+    <div class="drawer-cap"><span>All 135 fitted specimens, pose removed, sorted along PC1: long legs and antennae first, short-limbed cylindrical forms last.</span><span>Select a specimen to open it in 3D.</span></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="sec" id="pipeline">
+    <div class="sec-head">
+      <div class="eyebrow">Fitting steps</div>
+      <h2>From a Sketchfab model to a fitted OmniAnt</h2>
+      <p class="lede">Each model went through the same six steps. Shown here for <i>Harpegnathos</i>, a typical fit: it ranks 55th of 135 after the final stage.</p>
+    </div>
+    <div class="pipe" id="pipe"></div>
+  </section>
+
+  <section class="sec" id="quality">
+    <div class="sec-head">
+      <div class="eyebrow">Fit quality</div>
+      <h2>Pose and shape get close; per-vertex deformation closes the rest</h2>
+      <p class="lede" id="quality-lede"></p>
+    </div>
+    <div class="fig">
+      <div class="fig-title"><h3>Chamfer distance to the target, per specimen and stage</h3><span class="legend"><span><span class="ln" style="background:var(--ink-3)"></span>one specimen</span><span><span class="ln" style="background:var(--model)"></span>median</span></span></div>
+      <div class="chart" id="chart-chamfer"></div>
+      <p class="cap">Each line is one specimen. Distances are measured in the fitter's frame, where each target is centred and scaled so its furthest point sits at distance 1; the chamfer is the mean squared distance in both directions, shown ×10⁻⁴ on a log scale. Hover a line to see the specimen.</p>
+    </div>
+    <div class="two">
+      <div class="fig">
+        <div class="fig-title"><h3>Optimisation loss</h3></div>
+        <div class="legend" id="loss-legend"></div>
+        <div class="chart" id="chart-loss"></div>
+        <p class="cap">Total weighted loss over the 2,400 iterations of <code class="mono">ants_cfg.yaml</code>. It jumps at stage boundaries because each stage uses different loss weights.</p>
+      </div>
+      <div class="fig">
+        <div class="fig-title"><h3>Remaining error by body region</h3></div>
+        <div class="legend"><span><span class="sw" style="background:var(--s2)"></span>After pose + shape</span><span><span class="sw" style="background:var(--s1)"></span>After deformation</span></div>
+        <div class="chart" id="chart-regions"></div>
+        <p class="cap">Median over specimens of the mean distance from each fitted vertex to the target surface, as % of body length (head to gaster tip, without mandibles, antennae or legs). Regions come from the template's dominant skinning joint.</p>
+      </div>
+    </div>
+    <div class="fig">
+      <div class="fig-title"><h3>Where OmniAnt misses, averaged over all 135 fits</h3>
+        <div class="heatbar" id="heat-atlas"></div></div>
+      <div class="atlas">
+        <figure><img src="img/atlas_s1_persp.webp" alt="Mean ant shape coloured by mean error after pose and shape fitting: mesosoma and waist are darkest" width="640" height="480"><figcaption>After pose + shape: the mesosoma and waist carry most of the error.</figcaption></figure>
+        <figure><img src="img/atlas_s1_top.webp" alt="Same error map, top view" width="560" height="560"><figcaption>Top view, same stage.</figcaption></figure>
+        <figure><img src="img/atlas_s3_persp.webp" alt="Mean ant shape coloured by mean error after deformation: nearly uniform and low" width="640" height="480"><figcaption>After deformation: low everywhere, highest on the antennae and legs.</figcaption></figure>
+      </div>
+      <p class="cap">Mean per-vertex distance to the target surface (% of body length), painted on the mean fitted shape.</p>
+    </div>
+    <div class="fig">
+      <div class="fig-title"><h3>The hardest fits</h3><div class="heatbar" id="heat-fail"></div></div>
+      <div class="fails" id="fails"></div>
+      <p class="cap">Left: final fitted OmniAnt (blue). Right: the target, coloured by its distance to the pose + shape fit. The deformation stage drives the chamfer down but can crumple thin parts it cannot reach by pose and shape alone.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="specimens">
+    <div class="sec-head">
+      <div class="eyebrow">Every specimen</div>
+      <h2>135 fits, one card each</h2>
+      <p class="lede">Each card shows the final fit, then the target coloured by how far it lies from the fit after pose + shape and after deformation. Dark orange marks surface the fitted model does not reach.</p>
+    </div>
+    <div class="controls">
+      <label for="g-search">Search<input id="g-search" type="search" placeholder="Genus or species" autocomplete="off"></label>
+      <label for="g-sub">Subfamily<select id="g-sub"></select></label>
+      <label for="g-sort">Order<select id="g-sort">
+        <option value="name">Name</option>
+        <option value="s1">Hardest first (pose + shape)</option>
+        <option value="s3">Hardest first (final)</option>
+        <option value="pc1">PC1, long-legged first</option>
+      </select></label>
+      <div class="heatbar" id="heat-tiles"></div>
+    </div>
+    <div class="tile-cols" aria-hidden="true" style="max-width:340px"><span>Final fit</span><span>Target vs pose + shape</span><span>Target vs final</span></div>
+    <p class="muted mono" id="g-count" style="font-size:0.75rem"></p>
+    <div class="gallery" id="gallery"></div>
+  </section>
+
+  <section class="sec" id="variation">
+    <div class="sec-head">
+      <div class="eyebrow">Axes of variation</div>
+      <h2>What separates the species once pose is removed</h2>
+      <p class="lede" id="var-lede"></p>
+    </div>
+    <div class="fig">
+      <div class="fig-title"><h3>Shape variance explained by each principal component</h3></div>
+      <div class="legend"><span><span class="sw" style="background:var(--s1);border-radius:2px"></span>Per component</span><span><span class="ln" style="background:var(--ink-2)"></span>Cumulative</span></div>
+      <div class="chart" id="chart-scree"></div>
+    </div>
+    <div class="pcs" id="pc-cards"></div>
+    <p class="cap muted" style="font-size:0.85rem">Extremes are drawn at ±2.5 standard deviations from the mean shape and coloured by how far each part moves (light: little, dark orange: most). Names describe what moves; the end-member species are the four specimens with the lowest and highest scores.</p>
+  </section>
+
+  <section class="sec" id="explore">
+    <div class="sec-head">
+      <div class="eyebrow">3D explorer</div>
+      <h2>Morph the mean ant, or open any fitted specimen</h2>
+      <p class="lede">Drag to orbit, scroll or pinch to zoom. The sliders add principal components to the mean shape. Picking a specimen loads its exact fitted shape in the neutral pose.</p>
+    </div>
+    <div class="viewer">
+      <div class="v-canvas" id="v-canvas">
+        <img class="poster" src="img/mean_top.webp" alt="Mean fitted ant shape, top view" width="520" height="520">
+        <div class="v-read"><span class="who" id="v-who">Mean shape</span><span class="what" id="v-what">Average of all 135 fitted shapes</span></div>
+        <span class="v-hint" id="v-hint">Loading 3D data…</span>
+      </div>
+      <div class="v-panel">
+        <label class="eyebrow" for="v-spec">Specimen</label>
+        <select id="v-spec"></select>
+        <div class="row"><button class="btn" id="v-mean" type="button">Mean shape</button><button class="btn" id="v-rand" type="button">Random specimen</button></div>
+        <div class="eyebrow">Principal components (σ)</div>
+        <div id="v-sliders" style="display:grid;gap:10px"></div>
+        <div class="eyebrow">Colour</div>
+        <div class="seg" id="v-color" role="group" aria-label="Surface colour">
+          <button type="button" data-mode="plain" aria-pressed="true">Plain</button>
+          <button type="button" data-mode="change" aria-pressed="false">Change from mean</button>
+          <button type="button" data-mode="error" aria-pressed="false">Mean fit error</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="morphospace">
+    <div class="sec-head">
+      <div class="eyebrow">Morphospace</div>
+      <h2>135 species on the principal axes</h2>
+      <p class="lede">Each point is one specimen's score, in standard deviations. Switch the axes, highlight a subfamily, or draw the specimens themselves.</p>
+    </div>
+    <div class="fig">
+      <div class="controls">
+        <label for="m-x">Horizontal<select id="m-x"></select></label>
+        <label for="m-y">Vertical<select id="m-y"></select></label>
+        <label for="m-hl">Highlight<select id="m-hl"></select></label>
+        <label class="check" for="m-ants"><input type="checkbox" id="m-ants"> Draw specimens</label>
+      </div>
+      <div class="legend" id="m-legend"></div>
+      <div class="chart" id="chart-morpho"></div>
+      <p class="cap">Colours mark the three largest subfamilies; all other subfamilies and the Cretaceous stem ants share grey. Select a point to open the specimen in the 3D explorer.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="segments">
+    <div class="sec-head">
+      <div class="eyebrow">Segment sizes</div>
+      <h2>How much each body segment was rescaled</h2>
+      <p class="lede">On top of OmniAnt's 13 shape coefficients, the fit scales every joint's segment along its own axes. These factors show where the species depart most from the template: 1.0 is the template's size.</p>
+    </div>
+    <div class="fig">
+      <div class="legend"><span><span class="ln" style="background:var(--ink-3);height:1px"></span>range over specimens</span><span><span class="ln" style="background:var(--wash);height:8px;border-radius:4px"></span>middle 50%</span><span><span class="sw" style="background:var(--model)"></span>median</span></div>
+      <div class="chart" id="chart-segments"></div>
+      <p class="cap">Fitted local scale factor per segment (geometric mean over x, y and z, averaged over left and right), log scale. Hover a row for the extreme species.</p>
+    </div>
+    <details class="fig tbl">
+      <summary>All 135 specimens as a table</summary>
+      <div class="tbl-wrap"><table id="table"></table></div>
+    </details>
+  </section>
+
+  <section class="sec" id="method">
+    <div class="sec-head">
+      <div class="eyebrow">Method</div>
+      <h2>How these numbers were made</h2>
+    </div>
+    <div class="method">
+      <div><h3>Specimens</h3><p>All 135 downloadable ant models from <a href="https://sketchfab.com/tunosemi" target="_blank" rel="noopener">tunosemi on Sketchfab</a>, used with the author's permission (CC BY-NC-ND on Sketchfab). Names are tidied from the Sketchfab titles. The set includes queens, majors, minor workers, three Cretaceous stem ants and two uploads of <i>Blepharidatta conops</i>.</p></div>
+      <div><h3>Targets</h3><p>Blender joined each model's shells into one watertight surface by voxel remeshing, decimated it to about 100,000 vertices and applied very light Laplacian smoothing. Each target was then rotated to the template frame (head +X, back +Z) by the best of 24 axis-aligned rotations.</p></div>
+      <div><h3>Fit</h3><p><code>fitter_3d/optimise.py</code> with the four stages of <code>ants_cfg.yaml</code> and the <code>SMIL_OmniAnt.pkl</code> template (10,229 vertices, 55 joints, 13 shape coefficients). On a CPU-only Mac the chamfer loss used a dense implementation that matches pytorch3d's values and gradients exactly.</p></div>
+      <div><h3>Neutral shapes and PCA</h3><p>Each fit was re-skinned with all joint rotations set to zero. Its per-vertex deformation was carried back through each vertex's skinning transform; re-skinning reproduces the fitter's vertices exactly. Shapes were centred and scaled to unit centroid size, and the PCA runs on all 10,229 vertices. Scores are in standard deviations.</p></div>
+      <div><h3>Error measures</h3><p>Chamfer: 30,000 surface samples per mesh, in the fitter's frame. Per-vertex and per-region errors: nearest distance to the target surface, divided by body length (the head-to-gaster extent of the fitted body).</p></div>
+      <div><h3>Files</h3><p>Results: <code>tunosemi_ants/fit3d_results_OmniAnt/</code>. Analysis: <code>tools/analyse_fit.py</code>. Figures: <code>tools/build_report_assets.py</code> and <code>render_jobs.py</code> (Blender 4.5).</p></div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Ant models © tunosemi, used with permission. OmniAnt and fitter_3d are part of Holotype.</span>
+    <span>Rendered with Blender Workbench; charts drawn from the fit results without smoothing.</span>
+  </footer>
+</main>
+<div id="tip" role="tooltip" hidden></div>
+
+<script type="application/json" id="page-data">/*__DATA__*/</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+"use strict";
+const D = JSON.parse(document.getElementById("page-data").textContent);
+const S = D.specimens, N = S.length;
+const $ = (s, r = document) => r.querySelector(s);
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function txt(parent, x, y, s, cls, anchor, extra) {
+  const t = el("text", Object.assign({ x, y, class: cls || "ax", "text-anchor": anchor || "start" }, extra || {}), parent);
+  t.textContent = s;
+  return t;
+}
+const pad3 = (i) => String(i).padStart(3, "0");
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const PLAIN = new Set(["sp.", "cf.", "queen", "major", "minor", "worker"]);
+function fmtName(n) {
+  const m = n.match(/\s*\((.*)\)$/);
+  const base = m ? n.slice(0, m.index) : n;
+  const h = base.split(" ").map((w) => (PLAIN.has(w) ? esc(w) : "<i>" + esc(w) + "</i>")).join(" ");
+  return m ? h + ' <span class="muted">(' + esc(m[1]) + ")</span>" : h;
+}
+const median = (a) => { const b = [...a].sort((x, y) => x - y); const k = b.length >> 1; return b.length % 2 ? b[k] : (b[k - 1] + b[k]) / 2; };
+const quant = (a, q) => { const b = [...a].sort((x, y) => x - y); const p = (b.length - 1) * q; const lo = Math.floor(p); return b[lo] + (b[Math.min(lo + 1, b.length - 1)] - b[lo]) * (p - lo); };
+const lin = (d0, d1, r0, r1) => (v) => r0 + ((v - d0) / (d1 - d0)) * (r1 - r0);
+const logs = (d0, d1, r0, r1) => (v) => r0 + ((Math.log10(v) - Math.log10(d0)) / (Math.log10(d1) - Math.log10(d0))) * (r1 - r0);
+const c4 = (v) => (v * 1e4).toFixed(v * 1e4 < 1 ? 2 : 1);
+const sig = (v) => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(1) + "σ";
+
+/* tooltip */
+const tip = $("#tip");
+function showTip(html, ev) { tip.innerHTML = html; tip.hidden = false; moveTip(ev); }
+function moveTip(ev) {
+  if (tip.hidden) return;
+  const p = 14, r = tip.getBoundingClientRect();
+  let x = ev.clientX + p, y = ev.clientY + p;
+  if (x + r.width > innerWidth - 8) x = ev.clientX - r.width - p;
+  if (y + r.height > innerHeight - 8) y = ev.clientY - r.height - p;
+  tip.style.left = Math.max(8, x) + "px"; tip.style.top = Math.max(8, y) + "px";
+}
+function hideTip() { tip.hidden = true; }
+addEventListener("scroll", hideTip, { passive: true });
+
+function whenSized(node, draw) {
+  let last = 0;
+  const ro = new ResizeObserver(() => { const w = Math.floor(node.clientWidth); if (w > 0 && w !== last) { last = w; draw(w); } });
+  ro.observe(node);
+}
+function heatGradient() { return "linear-gradient(90deg," + D.heat.map((c, i) => `rgb(${c[0]},${c[1]},${c[2]}) ${(i / (D.heat.length - 1)) * 100}%`).join(",") + ")"; }
+function heatbar(node, max, label) {
+  node.innerHTML = `<span>${label}</span><div class="bar" style="background:${heatGradient()}"></div><div class="ticks"><span>0</span><span>${(max / 2).toFixed(2).replace(/0$/, "")}</span><span>${max}%+</span></div>`;
+}
+
+const stageNames = ["Initialise", "Pose + shape", "Deform coarse", "Deform fine"];
+const med = [0, 1, 2, 3].map((k) => median(S.map((s) => s.chamfer[k])));
+const p95m = [0, 1, 2, 3].map((k) => median(S.map((s) => s.p95[k])));
+const p95x = [0, 1, 2, 3].map((k) => Math.max(...S.map((s) => s.p95[k])));
+const subCount = {};
+S.forEach((s) => (subCount[s.subfamily] = (subCount[s.subfamily] || 0) + 1));
+const subs = Object.keys(subCount).sort((a, b) => subCount[b] - subCount[a] || a.localeCompare(b));
+const TOP3 = subs.slice(0, 3);
+const subColor = (s) => (s === TOP3[0] ? "var(--s1)" : s === TOP3[1] ? "var(--s2)" : s === TOP3[2] ? "var(--s3)" : "var(--s0)");
+const ratio = D.pca.ratio;
+const cum = (k) => ratio.slice(0, k).reduce((a, b) => a + b, 0);
+
+/* ---------- facts ---------- */
+$("#facts").innerHTML = [
+  `<span><b>135</b> species</span>`, `<span><b>${subs.filter((x) => !x.startsWith("Cretaceous")).length}</b> extant subfamilies + Cretaceous stem ants</span>`,
+  `<span><b>10,229</b>-vertex template</span>`, `<span><b>4</b> stages · <b>2,400</b> iterations</span>`,
+  `<span>95% of each target within <b>${p95m[3].toFixed(2)}%</b> of body length (median)</span>`,
+].join("");
+
+/* ---------- drawer ---------- */
+const drawer = $("#drawer-grid");
+D.order_pc1.forEach((i) => {
+  const s = S[i], b = document.createElement("button");
+  b.className = "spec"; b.type = "button";
+  b.setAttribute("aria-label", s.name + ", open in 3D");
+  b.innerHTML = `<img src="img/thumb_${pad3(i)}.webp" alt="" width="130" height="130" loading="lazy" decoding="async"><span class="lab">${esc(s.name.split(" ")[0])}</span>`;
+  b.addEventListener("pointerenter", (e) => showTip(`<b>${fmtName(s.name)}</b><div class="t-sub">${esc(s.subfamily)}</div><div class="t-num">PC1 ${sig(s.pc[0])} · chamfer ${c4(s.chamfer[3])}×10⁻⁴</div>`, e));
+  b.addEventListener("pointermove", moveTip);
+  b.addEventListener("pointerleave", hideTip);
+  b.addEventListener("click", () => { hideTip(); openInViewer(i); });
+  drawer.appendChild(b);
+});
+
+/* ---------- pipeline ---------- */
+const hi = S.findIndex((s) => s.key === "Harpegnathos_af9703ae");
+const H = S[hi];
+const steps = [
+  ["Source model", "pipe_1_source", "The Sketchfab upload: 125 separate shells, one per segment, overlapping inside the body.", "585,265 vertices · 125 shells"],
+  ["Watertight target", "pipe_2_target", "Shells fused by voxel remeshing, decimated to about 100k vertices, lightly smoothed and rotated head-forward.", "99,992 vertices · 1 component"],
+  ["Initialise", "pipe_3_init", "OmniAnt in its rest pose, only translated and rescaled per segment.", `chamfer ${c4(H.chamfer[0])}×10⁻⁴`],
+  ["Pose + shape", "pipe_4_pose_shape", "Joint rotations, 13 shape coefficients and segment scales optimised together.", `chamfer ${c4(H.chamfer[1])}×10⁻⁴`],
+  ["Deformation", "pipe_5_deform", "Two stages of per-vertex offsets, regularised for smoothness, take up what pose and shape cannot.", `chamfer ${c4(H.chamfer[3])}×10⁻⁴`],
+  ["Remaining error", "pipe_6_error", "The target coloured by its distance to the final fit. Almost all of it is pale.", `95% within ${H.p95[3].toFixed(2)}% of body length`],
+];
+$("#pipe").innerHTML = steps.map(([t, img, p, v]) => `<div class="step"><img src="img/${img}.webp" alt="${esc(t)} for Harpegnathos" width="640" height="480" loading="lazy"><span class="k">${t === "Remaining error" ? "check" : "step"}</span><h3>${t}</h3><p>${p}</p><span class="val">${v}</span></div>`).join("");
+
+/* ---------- quality lede + heat legends ---------- */
+$("#quality-lede").textContent =
+  `Median chamfer (×10⁻⁴) is ${c4(med[0])} after initialisation, ${c4(med[1])} once pose and shape are optimised, and ${c4(med[3])} after deformation. ` +
+  `After pose and shape, 95% of a target's surface lies within ${p95m[1].toFixed(2)}% of body length of the fit (worst specimen ${p95x[1].toFixed(2)}%); after deformation within ${p95m[3].toFixed(2)}% (worst ${p95x[3].toFixed(2)}%).`;
+heatbar($("#heat-atlas"), D.scales.atlas_max, "Distance to target, % of body length");
+heatbar($("#heat-fail"), D.scales.tile_max, "Target distance to fit, % of body length");
+heatbar($("#heat-tiles"), D.scales.tile_max, "Target distance to fit, % of body length");
+
+/* ---------- chamfer ladder ---------- */
+const chC = $("#chart-chamfer");
+whenSized(chC, (w) => {
+  chC.innerHTML = "";
+  const narrow = w < 560, h = narrow ? 320 : 380, m = { l: 46, r: narrow ? 64 : 120, t: 14, b: 42 };
+  const svg = el("svg", { width: w, height: h, viewBox: `0 0 ${w} ${h}`, role: "img", "aria-label": "Chamfer distance per specimen across the four fitting stages" }, chC);
+  const xs = (k) => m.l + (k * (w - m.l - m.r)) / 3;
+  const y = logs(3e-5, 3e-3, h - m.b, m.t);
+  [5e-5, 1e-4, 2e-4, 5e-4, 1e-3, 2e-3].forEach((v) => {
+    el("line", { x1: m.l, x2: w - m.r, y1: y(v), y2: y(v), class: "gl" }, svg);
+    txt(svg, m.l - 8, y(v) + 4, String(Math.round(v * 1e5) / 10), "ax", "end");
+  });
+  stageNames.forEach((n, k) => {
+    el("line", { x1: xs(k), x2: xs(k), y1: m.t, y2: h - m.b, class: "bl" }, svg);
+    txt(svg, xs(k), h - m.b + 18, narrow ? ["Init", "Pose+shape", "Coarse", "Fine"][k] : n, "ax-t", "middle");
+  });
+  txt(svg, m.l - 38, m.t - 2, "×10⁻⁴", "ax", "start");
+  const g = el("g", {}, svg), gh = el("g", {}, svg);
+  const pts = (s) => s.chamfer.map((v, k) => `${xs(k)},${y(Math.max(v, 3e-5))}`).join(" ");
+  const lines = S.map((s) => el("polyline", { points: pts(s), fill: "none", style: "stroke:var(--ink-3)", "stroke-width": 1, "stroke-opacity": 0.3 }, g));
+  el("polyline", { points: med.map((v, k) => `${xs(k)},${y(v)}`).join(" "), fill: "none", style: "stroke:var(--model)", "stroke-width": 2.5, "stroke-linejoin": "round", "stroke-linecap": "round" }, svg);
+  med.forEach((v, k) => el("circle", { cx: xs(k), cy: y(v), r: 4.5, style: "fill:var(--model);stroke:var(--card)", "stroke-width": 2 }, svg));
+  txt(svg, xs(3) + 10, y(med[3]) + 4, `median ${c4(med[3])}`, "lbl2");
+  const hl = el("polyline", { fill: "none", style: "stroke:var(--ink)", "stroke-width": 2, "stroke-linejoin": "round", visibility: "hidden" }, svg);
+  S.forEach((s, i) => {
+    const hit = el("polyline", { points: pts(s), fill: "none", stroke: "transparent", "stroke-width": 9, style: "cursor:pointer" }, gh);
+    hit.addEventListener("pointerenter", (e) => {
+      hl.setAttribute("points", pts(s)); hl.setAttribute("visibility", "visible");
+      showTip(`<b>${fmtName(s.name)}</b><div class="t-sub">${esc(s.subfamily)}</div><div class="t-num">${s.chamfer.map((v, k) => stageNames[k] + " " + c4(v)).join("<br>")} (×10⁻⁴)</div>`, e);
+    });
+    hit.addEventListener("pointermove", moveTip);
+    hit.addEventListener("pointerleave", () => { hl.setAttribute("visibility", "hidden"); hideTip(); });
+    hit.addEventListener("click", () => openInViewer(i));
+  });
+  void lines;
+});
+
+/* ---------- loss curves ---------- */
+const lossC = $("#chart-loss");
+const BATCHES = Object.keys(D.loss).sort((a, b) => a - b).slice(0, 3);
+const BCOL = ["var(--s1)", "var(--s2)", "var(--s3)"];
+const LOSS = BATCHES.map((b) => D.stages.flatMap((st) => D.loss[b][st]));
+const stageLens = D.stages.map((st) => D.loss[BATCHES[0]][st].length);
+$("#loss-legend").innerHTML = BATCHES.length > 1 ? BATCHES.map((b, k) => `<span><span class="ln" style="background:${BCOL[k]}"></span>Batch ${k + 1}</span>`).join("") : "";
+whenSized(lossC, (w) => {
+  lossC.innerHTML = "";
+  const h = 300, m = { l: 44, r: 14, t: 26, b: 34 };
+  const svg = el("svg", { width: w, height: h, viewBox: `0 0 ${w} ${h}`, role: "img", "aria-label": "Total loss per iteration for both batches" }, lossC);
+  const n = LOSS[0].length;
+  const all = LOSS.flat();
+  const lo = Math.pow(10, Math.floor(Math.log10(Math.min(...all)) * 2) / 2), hiV = Math.pow(10, Math.ceil(Math.log10(Math.max(...all)) * 2) / 2);
+  const x = lin(0, n - 1, m.l, w - m.r), y = logs(lo, hiV, h - m.b, m.t);
+  let acc = 0;
+  stageLens.forEach((L, k) => {
+    const x0 = x(acc), x1 = x(acc + L - 1);
+    if (k % 2 === 1) el("rect", { x: x0, y: m.t, width: x1 - x0, height: h - m.b - m.t, style: "fill:var(--grid)", opacity: 0.5 }, svg);
+    if (x1 - x0 > 40) txt(svg, (x0 + x1) / 2, m.t - 8, ["Init", "Pose + shape", "Deform coarse", "Deform fine"][k], "ax", "middle");
+    acc += L;
+  });
+  const ticks = [];
+  for (let e = Math.floor(Math.log10(lo)); e <= Math.ceil(Math.log10(hiV)); e++) [1, 2, 5].forEach((f) => { const v = f * Math.pow(10, e); if (v >= lo && v <= hiV) ticks.push(v); });
+  ticks.forEach((v) => { el("line", { x1: m.l, x2: w - m.r, y1: y(v), y2: y(v), class: "gl" }, svg); txt(svg, m.l - 6, y(v) + 4, String(Math.round(v * 1e4) / 10), "ax", "end"); });
+  txt(svg, m.l - 36, m.t - 8, "×10⁻³", "ax");
+  [0, 500, 1000, 1500, 2000].forEach((v) => txt(svg, x(v), h - m.b + 16, v.toLocaleString("en"), "ax", "middle"));
+  txt(svg, w - m.r, h - 4, "iteration", "ax", "end");
+  LOSS.forEach((_, b) => {
+    const c = BCOL[b];
+    const step = Math.max(1, Math.floor(n / (w * 1.5)));
+    const p = [];
+    for (let i = 0; i < n; i += step) p.push(`${x(i)},${y(LOSS[b][i])}`);
+    el("polyline", { points: p.join(" "), fill: "none", style: `stroke:${c}`, "stroke-width": 1.6, "stroke-linejoin": "round" }, svg);
+  });
+  const cross = el("line", { y1: m.t, y2: h - m.b, class: "bl", visibility: "hidden" }, svg);
+  const dots = LOSS.map((_, b) => el("circle", { r: 4, style: `fill:${BCOL[b]};stroke:var(--card)`, "stroke-width": 2, visibility: "hidden" }, svg));
+  const hit = el("rect", { x: m.l, y: m.t, width: w - m.l - m.r, height: h - m.t - m.b, fill: "transparent" }, svg);
+  hit.addEventListener("pointermove", (e) => {
+    const r = svg.getBoundingClientRect();
+    const i = Math.max(0, Math.min(n - 1, Math.round(((e.clientX - r.left - m.l) / (w - m.l - m.r)) * (n - 1))));
+    let st = 0, a = 0; while (st < stageLens.length - 1 && i >= a + stageLens[st]) { a += stageLens[st]; st++; }
+    cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("visibility", "visible");
+    dots.forEach((d, b) => { d.setAttribute("cx", x(i)); d.setAttribute("cy", y(LOSS[b][i])); d.setAttribute("visibility", "visible"); });
+    showTip(`<b>Iteration ${i.toLocaleString("en")}</b><div class="t-sub">${stageNames[st]}, step ${i - a}</div><div class="t-num">${LOSS.map((L, b) => `Batch ${b + 1}: ${(L[i] * 1e3).toFixed(3)}×10⁻³`).join("<br>")}</div>`, e);
+  });
+  hit.addEventListener("pointerleave", () => { cross.setAttribute("visibility", "hidden"); dots.forEach((d) => d.setAttribute("visibility", "hidden")); hideTip(); });
+});
+
+/* ---------- region dumbbells ---------- */
+const regC = $("#chart-regions");
+const RN = D.region_names;
+const regStats = RN.map((r, k) => {
+  const a = S.map((s) => s.region_err_s1[k]), b = S.map((s) => s.region_err_s3[k]);
+  return { r, s1: median(a), s3: median(b), s1q: [quant(a, 0.25), quant(a, 0.75)], s3q: [quant(b, 0.25), quant(b, 0.75)] };
+}).sort((a, b) => b.s1 - a.s1);
+whenSized(regC, (w) => {
+  regC.innerHTML = "";
+  const row = 30, m = { l: 92, r: 18, t: 8, b: 30 }, h = m.t + m.b + row * regStats.length;
+  const svg = el("svg", { width: w, height: h, viewBox: `0 0 ${w} ${h}`, role: "img", "aria-label": "Median error per body region before and after deformation" }, regC);
+  const maxV = Math.ceil(Math.max(...regStats.map((d) => d.s1)) * 4) / 4;
+  const x = lin(0, maxV, m.l, w - m.r);
+  for (let v = 0; v <= maxV + 1e-9; v += 0.25) { el("line", { x1: x(v), x2: x(v), y1: m.t, y2: h - m.b, class: v === 0 ? "bl" : "gl" }, svg); txt(svg, x(v), h - m.b + 16, v.toFixed(2).replace(/0$/, "") + "%", "ax", "middle"); }
+  regStats.forEach((d, i) => {
+    const cy = m.t + row * i + row / 2;
+    txt(svg, m.l - 10, cy + 4, d.r, "lbl2", "end");
+    el("line", { x1: x(d.s3), x2: x(d.s1), y1: cy, y2: cy, style: "stroke:var(--axis)", "stroke-width": 2 }, svg);
+    el("circle", { cx: x(d.s1), cy, r: 5, style: "fill:var(--s2);stroke:var(--card)", "stroke-width": 2 }, svg);
+    el("circle", { cx: x(d.s3), cy, r: 5, style: "fill:var(--s1);stroke:var(--card)", "stroke-width": 2 }, svg);
+    const hit = el("rect", { x: 0, y: cy - row / 2, width: w, height: row, fill: "transparent" }, svg);
+    hit.addEventListener("pointerenter", (e) => showTip(`<b>${esc(d.r)}</b><div class="t-num">After pose + shape: ${d.s1.toFixed(2)}% (middle half ${d.s1q[0].toFixed(2)}–${d.s1q[1].toFixed(2)})<br>After deformation: ${d.s3.toFixed(2)}% (middle half ${d.s3q[0].toFixed(2)}–${d.s3q[1].toFixed(2)})</div>`, e));
+    hit.addEventListener("pointermove", moveTip); hit.addEventListener("pointerleave", hideTip);
+  });
+});
+
+/* ---------- failure cases ---------- */
+const FAILS = [["Myrmica_rubra_1e5696ca", "The worst final fit. The deformation crumples the head where the template's mandibles cannot follow the target's."],
+  ["Neivamyrmex_pseudops_abf2556e", "Antennae curled back over the head. The fitted funiculus loops instead of following the target."],
+  ["Cephalotes_3d1eaa8a", "Flattened turtle ant with a disc-shaped head and expanded mesosoma, outside what OmniAnt's shape space reaches."]];
+$("#fails").innerHTML = FAILS.map(([k, t]) => {
+  const i = S.findIndex((s) => s.key === k), s = S[i];
+  return `<figure><div class="pair"><img src="img/fail_${pad3(i)}_fit.webp" alt="Final fit of ${esc(s.name)}" width="640" height="480" loading="lazy"><img src="img/fail_${pad3(i)}_err_s1.webp" alt="Target of ${esc(s.name)} coloured by error" width="640" height="480" loading="lazy"></div><figcaption><b>${fmtName(s.name)}</b>, ${esc(s.subfamily)} · final chamfer ${c4(s.chamfer[3])}×10⁻⁴. ${t}</figcaption></figure>`;
+}).join("");
+
+/* ---------- gallery ---------- */
+const gal = $("#gallery");
+const gSub = $("#g-sub"), gSort = $("#g-sort"), gSearch = $("#g-search");
+gSub.innerHTML = `<option value="">All (${N})</option>` + subs.map((s) => `<option value="${esc(s)}">${esc(s)} (${subCount[s]})</option>`).join("");
+const cards = S.map((s, i) => {
+  const d = document.createElement("article");
+  d.className = "tile";
+  d.innerHTML = `<img src="img/tile_${pad3(i)}.webp" alt="${esc(s.name)}: final fit and target error maps" width="720" height="240" loading="lazy" decoding="async"><div class="nm">${fmtName(s.name)}</div><div class="meta"><span>${esc(s.subfamily)}</span><span class="num">chamfer ${c4(s.chamfer[1])} → ${c4(s.chamfer[3])}×10⁻⁴</span></div><div class="meta"><span class="num">95% within ${s.p95[3].toFixed(2)}% BL</span><span><a href="${s.url}" target="_blank" rel="noopener">Sketchfab ↗</a> · <a href="#explore" data-open="${i}">3D</a></span></div>`;
+  return d;
+});
+gal.addEventListener("click", (e) => { const a = e.target.closest("[data-open]"); if (a) { e.preventDefault(); openInViewer(+a.dataset.open); } });
+function renderGallery() {
+  const q = gSearch.value.trim().toLowerCase(), sub = gSub.value, mode = gSort.value;
+  let idx = S.map((_, i) => i).filter((i) => (!sub || S[i].subfamily === sub) && (!q || S[i].name.toLowerCase().includes(q) || S[i].subfamily.toLowerCase().includes(q)));
+  const key = { name: (i) => S[i].name.toLowerCase(), s1: (i) => -S[i].chamfer[1], s3: (i) => -S[i].chamfer[3], pc1: (i) => S[i].pc[0] }[mode];
+  idx.sort((a, b) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0));
+  gal.replaceChildren(...idx.map((i) => cards[i]));
+  $("#g-count").textContent = `Showing ${idx.length} of ${N}`;
+}
+[gSub, gSort].forEach((c) => c.addEventListener("change", renderGallery));
+gSearch.addEventListener("input", renderGallery);
+renderGallery();
+
+/* ---------- PCA ---------- */
+const PCI = [
+  { name: "Appendage length", neg: "Long legs and antennae, small gaster", pos: "Short appendages, long cylindrical gaster" },
+  { name: "Head and mandible size", neg: "Broad head, large mandibles, round gaster", pos: "Narrow head, slender elongate body" },
+  { name: "Compact or elongate trunk", neg: "Short, broad body throughout", pos: "Long, slender mesosoma and waist" },
+  { name: "Antennae against head", neg: "Large head and mandibles, shorter antennae", pos: "Long antennae, smaller head" },
+];
+$("#var-lede").textContent = `A PCA of the 135 fitted shapes in the neutral pose. The first component alone explains ${(ratio[0] * 100).toFixed(0)}% of the shape variance; five explain ${(cum(5) * 100).toFixed(0)}% and ten ${(cum(10) * 100).toFixed(0)}%.`;
+const scrC = $("#chart-scree");
+whenSized(scrC, (w) => {
+  scrC.innerHTML = "";
+  const h = 240, m = { l: 40, r: 12, t: 12, b: 30 }, K = ratio.length;
+  const svg = el("svg", { width: w, height: h, viewBox: `0 0 ${w} ${h}`, role: "img", "aria-label": "Variance explained per principal component" }, scrC);
+  const bw = (w - m.l - m.r) / K, y = lin(0, 1, h - m.b, m.t);
+  [0, 0.25, 0.5, 0.75, 1].forEach((v) => { el("line", { x1: m.l, x2: w - m.r, y1: y(v), y2: y(v), class: v ? "gl" : "bl" }, svg); txt(svg, m.l - 6, y(v) + 4, v * 100 + "%", "ax", "end"); });
+  const cpts = [];
+  ratio.forEach((r, k) => {
+    const cx = m.l + bw * (k + 0.5), bwid = Math.min(24, bw * 0.6), top = y(r);
+    el("path", { d: `M${cx - bwid / 2},${y(0)} V${top + 4} q0,-4 4,-4 h${bwid - 8} q4,0 4,4 V${y(0)} Z`, style: "fill:var(--s1)" }, svg);
+    txt(svg, cx, h - m.b + 16, "PC" + (k + 1), "ax", "middle");
+    cpts.push([cx, y(cum(k + 1))]);
+    const hit = el("rect", { x: cx - bw / 2, y: m.t, width: bw, height: h - m.t - m.b, fill: "transparent" }, svg);
+    hit.addEventListener("pointerenter", (e) => showTip(`<b>PC${k + 1}${PCI[k] ? " · " + PCI[k].name : ""}</b><div class="t-num">${(r * 100).toFixed(1)}% of variance<br>cumulative ${(cum(k + 1) * 100).toFixed(1)}%</div>`, e));
+    hit.addEventListener("pointermove", moveTip); hit.addEventListener("pointerleave", hideTip);
+  });
+  el("polyline", { points: cpts.map((p) => p.join(",")).join(" "), fill: "none", style: "stroke:var(--ink-2)", "stroke-width": 2, "pointer-events": "none" }, svg);
+  cpts.forEach(([cx, cy]) => el("circle", { cx, cy, r: 3.5, style: "fill:var(--ink-2);stroke:var(--card)", "stroke-width": 2, "pointer-events": "none" }, svg));
+  txt(svg, cpts[K - 1][0], cpts[K - 1][1] - 10, `${(cum(K) * 100).toFixed(0)}%`, "lbl2", "end");
+  txt(svg, m.l + bw * 0.5 + 16, y(ratio[0]) + 4, `${(ratio[0] * 100).toFixed(0)}%`, "lbl2");
+});
+const corrNames = Object.keys(D.pca.trait_corr);
+$("#pc-cards").innerHTML = PCI.map((p, k) => {
+  const order = S.map((_, i) => i).sort((a, b) => S[a].pc[k] - S[b].pc[k]);
+  const lowN = order.slice(0, 4).map((i) => fmtName(S[i].name)).join(", "), highN = order.slice(-4).reverse().map((i) => fmtName(S[i].name)).join(", ");
+  const reg = Object.entries(D.pca.pc_region[k]).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([r, v]) => `${r} ${(v * 100).toFixed(0)}%`).join(" · ");
+  const best = corrNames.map((t) => [t, D.pca.trait_corr[t][k]]).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))[0];
+  return `<article class="pc"><div class="pc-head"><h3>PC${k + 1} · ${p.name}</h3><span class="pct">${(ratio[k] * 100).toFixed(1)}% of variance</span></div>
+  <div class="pc-ends"><figure><span class="sig">−2.5σ</span><img src="img/pc${k + 1}_neg_top.webp" alt="PC${k + 1} at minus 2.5 sigma, top view" width="520" height="520" loading="lazy"><img src="img/pc${k + 1}_neg_side.webp" alt="PC${k + 1} at minus 2.5 sigma, side view" width="520" height="260" loading="lazy"><figcaption>${p.neg}</figcaption></figure>
+  <figure><span class="sig">+2.5σ</span><img src="img/pc${k + 1}_pos_top.webp" alt="PC${k + 1} at plus 2.5 sigma, top view" width="520" height="520" loading="lazy"><img src="img/pc${k + 1}_pos_side.webp" alt="PC${k + 1} at plus 2.5 sigma, side view" width="520" height="260" loading="lazy"><figcaption>${p.pos}</figcaption></figure></div>
+  <dl><dt>Moves most</dt><dd>${reg}</dd><dt>Tracks</dt><dd>${best[0]}, r = ${best[1] >= 0 ? "+" : "−"}${Math.abs(best[1]).toFixed(2)}</dd><dt>Low end</dt><dd>${lowN}</dd><dt>High end</dt><dd>${highN}</dd></dl>
+  <div class="row"><button class="btn" type="button" data-pc="${k}" data-v="-2.5">−2.5σ in 3D</button><button class="btn" type="button" data-pc="${k}" data-v="2.5">+2.5σ in 3D</button></div></article>`;
+}).join("");
+$("#pc-cards").addEventListener("click", (e) => { const b = e.target.closest("[data-pc]"); if (b) { V.morphTo(+b.dataset.pc, +b.dataset.v); $("#explore").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); } });
+
+/* ---------- morphospace ---------- */
+const mx = $("#m-x"), my = $("#m-y"), mhl = $("#m-hl"), mants = $("#m-ants");
+const pcOpts = [0, 1, 2, 3, 4, 5].map((k) => `<option value="${k}">PC${k + 1}${PCI[k] ? " · " + PCI[k].name : ""}</option>`).join("");
+mx.innerHTML = pcOpts; my.innerHTML = pcOpts; mx.value = "0"; my.value = "1";
+mhl.innerHTML = `<option value="">None</option>` + subs.map((s) => `<option value="${esc(s)}">${esc(s)} (${subCount[s]})</option>`).join("");
+$("#m-legend").innerHTML = TOP3.map((s) => `<span><span class="sw" style="background:${subColor(s)}"></span>${esc(s)} (${subCount[s]})</span>`).join("") + `<span><span class="sw" style="background:var(--s0)"></span>Other subfamilies (${N - TOP3.reduce((a, s) => a + subCount[s], 0)})</span>`;
+const moC = $("#chart-morpho");
+function drawMorpho() {
+  const w = Math.floor(moC.clientWidth); if (!w) return;
+  moC.innerHTML = "";
+  const kx = +mx.value, ky = +my.value, hl = mhl.value, ants = mants.checked;
+  const h = Math.max(360, Math.min(620, Math.round(w * 0.62))), m = { l: 36, r: 16, t: 14, b: 36 };
+  const svg = el("svg", { width: w, height: h, viewBox: `0 0 ${w} ${h}`, role: "img", "aria-label": `Specimens plotted on PC${kx + 1} and PC${ky + 1}` }, moC);
+  const ex = Math.ceil(Math.max(...S.map((s) => Math.abs(s.pc[kx]))) + 0.3), ey = Math.ceil(Math.max(...S.map((s) => Math.abs(s.pc[ky]))) + 0.3);
+  const x = lin(-ex, ex, m.l, w - m.r), y = lin(-ey, ey, h - m.b, m.t);
+  for (let v = -ex; v <= ex; v++) { el("line", { x1: x(v), x2: x(v), y1: m.t, y2: h - m.b, class: v === 0 ? "bl" : "gl" }, svg); if (v % (ex > 4 ? 2 : 1) === 0) txt(svg, x(v), h - m.b + 16, (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v), "ax", "middle"); }
+  for (let v = -ey; v <= ey; v++) { el("line", { x1: m.l, x2: w - m.r, y1: y(v), y2: y(v), class: v === 0 ? "bl" : "gl" }, svg); if (v % (ey > 4 ? 2 : 1) === 0) txt(svg, m.l - 6, y(v) + 4, (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v), "ax", "end"); }
+  txt(svg, w - m.r, h - 4, `PC${kx + 1} (σ) →`, "ax-t", "end");
+  txt(svg, m.l + 4, m.t + 12, `↑ PC${ky + 1} (σ)`, "ax-t");
+  const order = S.map((_, i) => i).sort((a, b) => (S[a].subfamily === hl) - (S[b].subfamily === hl));
+  const size = Math.max(34, Math.min(64, w / 16));
+  order.forEach((i) => {
+    const s = S[i], cx = x(s.pc[kx]), cy = y(s.pc[ky]), on = !hl || s.subfamily === hl;
+    let node;
+    if (ants) {
+      node = el("image", { href: `img/thumb_${pad3(i)}.webp`, x: cx - size / 2, y: cy - size / 2, width: size, height: size, opacity: on ? 1 : 0.18, style: "cursor:pointer" }, svg);
+    } else {
+      const fill = hl ? (on ? "var(--ink)" : "var(--s0)") : subColor(s.subfamily);
+      node = el("circle", { cx, cy, r: on && hl ? 6 : 5, style: `fill:${fill};stroke:var(--card);cursor:pointer`, "stroke-width": 2, opacity: on ? 1 : 0.35 }, svg);
+    }
+    node.addEventListener("pointerenter", (e) => showTip(`<img src="img/thumb_${pad3(i)}.webp" alt=""><b>${fmtName(s.name)}</b><div class="t-sub">${esc(s.subfamily)}</div><div class="t-num">PC${kx + 1} ${sig(s.pc[kx])} · PC${ky + 1} ${sig(s.pc[ky])}</div>`, e));
+    node.addEventListener("pointermove", moveTip); node.addEventListener("pointerleave", hideTip);
+    node.addEventListener("click", () => { hideTip(); openInViewer(i); });
+  });
+}
+[mx, my, mhl, mants].forEach((c) => c.addEventListener("change", drawMorpho));
+whenSized(moC, drawMorpho);
+
+/* ---------- segment scales ---------- */
+const JN = D.joints.names;
+const SEG = { co: "coxa", tr: "trochanter", fe: "femur", ti: "tibia", ta: "tarsus", pt: "pretarsus" };
+const rows = [];
+const addRow = (label, group, keys) => rows.push({ label, group, idx: keys.map((k) => JN.indexOf(k)).filter((i) => i >= 0) });
+addRow("Head", "Head", ["b_h"]); addRow("Mandible", "Head", ["ma_l", "ma_r"]);
+[1, 2, 3].forEach((n) => addRow(`Antenna joint ${n}${n === 1 ? " (base)" : n === 3 ? " (tip)" : ""}`, "Head", [`an_${n}_l`, `an_${n}_r`]));
+addRow("Mesosoma", "Trunk", ["b_t"]);
+[1, 2, 3, 4, 5].forEach((n) => addRow(`Abdomen ${n}${n === 1 ? " (front)" : n === 5 ? " (tip)" : ""}`, "Trunk", [`b_a_${n}`]));
+[["1", "Fore"], ["2", "Mid"], ["3", "Hind"]].forEach(([l, nm]) => Object.entries(SEG).forEach(([c, sn]) => addRow(`${nm} ${sn}`, `${nm} leg`, [`l_${l}_${c}_l`, `l_${l}_${c}_r`])));
+rows.forEach((r) => {
+  r.v = S.map((s) => Math.exp(r.idx.reduce((a, j) => a + Math.log(s.joint_scale[j]), 0) / r.idx.length));
+  r.min = Math.min(...r.v); r.max = Math.max(...r.v); r.q1 = quant(r.v, 0.25); r.q3 = quant(r.v, 0.75); r.med = median(r.v);
+  r.minN = S[r.v.indexOf(r.min)].name; r.maxN = S[r.v.indexOf(r.max)].name;
+});
+const segC = $("#chart-segments");
+whenSized(segC, (w) => {
+  segC.innerHTML = "";
+  const row = 22, gap = 16, m = { l: w < 520 ? 120 : 150, r: 18, t: 10, b: 30 };
+  const groups = [...new Set(rows.map((r) => r.group))];
+  const h = m.t + m.b + rows.length * row + groups.length * gap;
+  const svg = el("svg", { width: w, height: h, viewBox: `0 0 ${w} ${h}`, role: "img", "aria-label": "Fitted scale factor per body segment" }, segC);
+  const lo = Math.min(...rows.map((r) => r.min)) * 0.92, hiS = Math.max(...rows.map((r) => r.max)) * 1.08;
+  const x = logs(lo, hiS, m.l, w - m.r);
+  [0.25, 0.33, 0.5, 0.67, 1, 1.5, 2, 3, 4].filter((v) => v >= lo && v <= hiS).forEach((v) => {
+    el("line", { x1: x(v), x2: x(v), y1: m.t, y2: h - m.b, class: v === 1 ? "bl" : "gl", "stroke-width": v === 1 ? 1.5 : 1 }, svg);
+    txt(svg, x(v), h - m.b + 16, v + "×", "ax", "middle");
+  });
+  let yy = m.t, prev = null;
+  rows.forEach((r) => {
+    if (r.group !== prev) { yy += gap; txt(svg, 0, yy - 3, r.group.toUpperCase(), "ax", "start"); prev = r.group; }
+    const cy = yy + row / 2;
+    txt(svg, m.l - 10, cy + 4, r.label, "lbl2", "end");
+    el("line", { x1: x(r.min), x2: x(r.max), y1: cy, y2: cy, style: "stroke:var(--ink-3)", "stroke-width": 1 }, svg);
+    el("rect", { x: x(r.q1), y: cy - 4, width: Math.max(2, x(r.q3) - x(r.q1)), height: 8, rx: 4, style: "fill:var(--wash)" }, svg);
+    el("circle", { cx: x(r.med), cy, r: 4, style: "fill:var(--model);stroke:var(--card)", "stroke-width": 2 }, svg);
+    const hit = el("rect", { x: 0, y: yy, width: w, height: row, fill: "transparent" }, svg);
+    hit.addEventListener("pointerenter", (e) => showTip(`<b>${esc(r.label)}</b><div class="t-num">median ${r.med.toFixed(2)}× · middle half ${r.q1.toFixed(2)}–${r.q3.toFixed(2)}×<br>smallest ${r.min.toFixed(2)}×: ${fmtName(r.minN)}<br>largest ${r.max.toFixed(2)}×: ${fmtName(r.maxN)}</div>`, e));
+    hit.addEventListener("pointermove", moveTip); hit.addEventListener("pointerleave", hideTip);
+    yy += row;
+  });
+});
+
+/* ---------- table ---------- */
+const COLS = [["Specimen", (s) => s.name, false], ["Subfamily", (s) => s.subfamily, false], ["Chamfer init", (s) => s.chamfer[0] * 1e4, true],
+  ["Pose + shape", (s) => s.chamfer[1] * 1e4, true], ["Final", (s) => s.chamfer[3] * 1e4, true], ["95% within, % BL", (s) => s.p95[3], true],
+  ["PC1 σ", (s) => s.pc[0], true], ["PC2 σ", (s) => s.pc[1], true], ["PC3 σ", (s) => s.pc[2], true]];
+let tSort = [0, 1];
+function renderTable() {
+  const [c, dir] = tSort, f = COLS[c][1];
+  const rowsT = [...S].sort((a, b) => (f(a) < f(b) ? -dir : f(a) > f(b) ? dir : 0));
+  $("#table").innerHTML = `<thead><tr>${COLS.map(([n, , num], k) => `<th class="${num ? "n" : ""}" data-c="${k}" aria-sort="${k === c ? (dir > 0 ? "ascending" : "descending") : "none"}">${n}${k === c ? (dir > 0 ? " ↑" : " ↓") : ""}</th>`).join("")}</tr></thead><tbody>` +
+    rowsT.map((s) => `<tr>${COLS.map(([, g, num], k) => (num ? `<td class="n">${g(s).toFixed(k >= 6 ? 2 : k === 5 ? 2 : 2)}</td>` : `<td>${k === 0 ? fmtName(g(s)) : esc(g(s))}</td>`)).join("")}</tr>`).join("") + "</tbody>";
+}
+$("#table").addEventListener("click", (e) => { const th = e.target.closest("th"); if (!th) return; const c = +th.dataset.c; tSort = [c, tSort[0] === c ? -tSort[1] : 1]; renderTable(); });
+renderTable();
+
+/* ---------- 3D viewer ---------- */
+let pendingMorph = null;
+const V = { morphTo: (k, v) => { pendingMorph = [k, v]; }, ready: false };
+const vWrap = $("#v-canvas"), vHint = $("#v-hint"), vWho = $("#v-who"), vWhat = $("#v-what");
+const vSpec = $("#v-spec"), vSl = $("#v-sliders");
+const NS_PC = 6;
+const sliderVals = new Array(NS_PC).fill(0);
+vSpec.innerHTML = `<option value="">Mean shape</option>` + S.map((s, i) => [s.name, i]).sort((a, b) => a[0].localeCompare(b[0])).map(([n, i]) => `<option value="${i}">${esc(n)}</option>`).join("");
+vSl.innerHTML = Array.from({ length: NS_PC }, (_, k) => `<div class="slider"><label for="v-pc${k}"><b>PC${k + 1}</b>${PCI[k] ? esc(PCI[k].name) : ""}</label><output id="v-pc${k}-o" for="v-pc${k}">0.0σ</output><input type="range" id="v-pc${k}" min="-3" max="3" step="0.1" value="0"></div>`).join("");
+function setSliderUI() { for (let k = 0; k < NS_PC; k++) { $("#v-pc" + k).value = sliderVals[k]; $("#v-pc" + k + "-o").textContent = sig(sliderVals[k]).replace("+0.0", "0.0").replace("−0.0", "0.0"); } }
+let pending = null;
+function openInViewer(i) {
+  $("#explore").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  if (V.ready) V.showSpecimen(i); else pending = i;
+}
+(async function initViewer() {
+  if (!window.THREE || !THREE.OrbitControls) { vHint.textContent = "3D view needs WebGL and could not start here; the static render shows the mean shape."; return; }
+  let gl;
+  try {
+    const get = (u) => fetch(u).then((r) => { if (!r.ok) throw new Error(u + " " + r.status); return r.text(); }).then((t) => {
+      const bin = atob(t.trim()), out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out.buffer;
+    });
+    const [fb, mb, pb, ab] = await Promise.all(["data/faces.txt", "data/mean.txt", "data/pcs.txt", "data/atlas_s1.txt"].map(get));
+    const faces = new Uint16Array(fb), mean = new Float32Array(mb), pcsI = new Int16Array(pb), atlas = new Uint8Array(ab);
+    const Vn = mean.length / 3, K = D.K;
+    const pcs = Array.from({ length: K }, (_, k) => { const a = new Float32Array(Vn * 3), s = D.pc_scale[k]; for (let j = 0; j < Vn * 3; j++) a[j] = pcsI[k * Vn * 3 + j] * s; return a; });
+    let shapes = null, shapesP = null;
+    const loadShapes = () => shapesP || (shapesP = get("data/shapes.txt").then((b) => (shapes = new Int16Array(b))));
+
+    const canvas = document.createElement("canvas");
+    vWrap.prepend(canvas);
+    gl = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+    gl.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    gl.outputEncoding = THREE.sRGBEncoding;
+    const scene = new THREE.Scene();
+    const cam = new THREE.PerspectiveCamera(30, 4 / 3, 0.01, 50);
+    cam.up.set(0, 0, 1); cam.position.set(1.15, -1.65, 0.95);
+    const ctl = new THREE.OrbitControls(cam, canvas);
+    ctl.target.set(0, 0, 0); ctl.minDistance = 0.6; ctl.maxDistance = 6; ctl.update();
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x6e6a62, 0.85));
+    const key = new THREE.DirectionalLight(0xffffff, 0.85); key.position.set(2, -3, 4); scene.add(key);
+    const fill = new THREE.DirectionalLight(0xffffff, 0.3); fill.position.set(-3, 2, 1.5); scene.add(fill);
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(mean), col = new Float32Array(Vn * 3);
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    geo.setIndex(new THREE.BufferAttribute(faces, 1));
+    const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, metalness: 0.0, side: THREE.DoubleSide });
+    const mesh = new THREE.Mesh(geo, mat); scene.add(mesh);
+    const lin2 = (c) => Math.pow(c / 255, 2.2);
+    const CHITIN = [176, 128, 80].map(lin2);
+    const ramp = D.heat.map((c) => c.map(lin2));
+    const heatAt = (t) => { t = Math.max(0, Math.min(1, t)) * (ramp.length - 1); const i = Math.min(Math.floor(t), ramp.length - 2), f = t - i; return [0, 1, 2].map((c) => ramp[i][c] * (1 - f) + ramp[i + 1][c] * f); };
+    let colorMode = "plain";
+    function paint() {
+      if (colorMode === "plain") { for (let j = 0; j < Vn; j++) col.set(CHITIN, j * 3); }
+      else if (colorMode === "error") { for (let j = 0; j < Vn; j++) col.set(heatAt(atlas[j] / 255), j * 3); }
+      else {
+        let mx2 = 1e-9; const d = new Float32Array(Vn);
+        for (let j = 0; j < Vn; j++) { const a = pos[3 * j] - mean[3 * j], b = pos[3 * j + 1] - mean[3 * j + 1], c = pos[3 * j + 2] - mean[3 * j + 2]; d[j] = Math.sqrt(a * a + b * b + c * c); if (d[j] > mx2) mx2 = d[j]; }
+        const ref = Math.max(mx2, 0.12);
+        for (let j = 0; j < Vn; j++) col.set(heatAt(d[j] / ref), j * 3);
+      }
+      geo.attributes.color.needsUpdate = true;
+    }
+    function bg() { const c = getComputedStyle(document.documentElement).getPropertyValue("--card").trim() || "#fcfcfb"; gl.setClearColor(new THREE.Color(c)); }
+    const render = () => gl.render(scene, cam);
+    ctl.addEventListener("change", render);
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let anim = 0;
+    function goTo(target) {
+      const from = new Float32Array(pos), t0 = performance.now(), dur = reduce ? 0 : 450;
+      cancelAnimationFrame(anim);
+      const stepF = (t) => {
+        const u = dur ? Math.min(1, (t - t0) / dur) : 1, e = u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2;
+        for (let j = 0; j < pos.length; j++) pos[j] = from[j] + (target[j] - from[j]) * e;
+        geo.attributes.position.needsUpdate = true; geo.computeVertexNormals();
+        if (colorMode === "change") paint();
+        render();
+        if (u < 1) anim = requestAnimationFrame(stepF);
+      };
+      anim = requestAnimationFrame(stepF);
+    }
+    function morphTarget() {
+      const t = new Float32Array(mean);
+      for (let k = 0; k < NS_PC; k++) { const v = sliderVals[k]; if (v) { const p = pcs[k]; for (let j = 0; j < t.length; j++) t[j] += v * p[j]; } }
+      return t;
+    }
+    function fromSliders(label) {
+      const any = sliderVals.some((v) => v);
+      vWho.textContent = label || (any ? "Mean shape + principal components" : "Mean shape");
+      vWhat.textContent = any ? sliderVals.map((v, k) => (v ? `PC${k + 1} ${sig(v)}` : "")).filter(Boolean).join(" · ") : "Average of all 135 fitted shapes";
+      goTo(morphTarget());
+    }
+    for (let k = 0; k < NS_PC; k++) {
+      $("#v-pc" + k).addEventListener("input", (e) => { sliderVals[k] = +e.target.value; setSliderUI(); vSpec.value = ""; fromSliders(); });
+    }
+    V.morphTo = (k, v) => { sliderVals.fill(0); sliderVals[k] = v; setSliderUI(); vSpec.value = ""; fromSliders(`PC${k + 1} at ${sig(v)}`); };
+    V.showSpecimen = async (i) => {
+      const s = S[i];
+      vSpec.value = String(i); vWho.innerHTML = fmtName(s.name); vWhat.textContent = "Loading fitted shapes (11 MB, once)…";
+      await loadShapes();
+      const t = new Float32Array(mean), off = i * Vn * 3, sc = D.shape_scale;
+      for (let j = 0; j < t.length; j++) t[j] += shapes[off + j] * sc;
+      for (let k = 0; k < NS_PC; k++) sliderVals[k] = Math.max(-3, Math.min(3, Math.round(s.pc[k] * 10) / 10));
+      setSliderUI();
+      vWhat.textContent = `${s.subfamily} · exact fitted shape, neutral pose · PC1 ${sig(s.pc[0])}, PC2 ${sig(s.pc[1])}`;
+      goTo(t);
+    };
+    vSpec.addEventListener("change", () => { if (vSpec.value === "") { sliderVals.fill(0); setSliderUI(); fromSliders(); } else V.showSpecimen(+vSpec.value); });
+    $("#v-mean").addEventListener("click", () => { sliderVals.fill(0); setSliderUI(); vSpec.value = ""; fromSliders(); });
+    $("#v-rand").addEventListener("click", () => V.showSpecimen(Math.floor(Math.random() * N)));
+    $("#v-color").addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-mode]"); if (!b) return;
+      colorMode = b.dataset.mode;
+      $("#v-color").querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      paint(); render();
+    });
+    const resize = () => { const w = vWrap.clientWidth, h = vWrap.clientHeight; if (!w || !h) return; gl.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); render(); };
+    new ResizeObserver(resize).observe(vWrap);
+    new MutationObserver(() => { bg(); render(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { bg(); render(); });
+    bg(); paint(); geo.computeVertexNormals(); resize();
+    vWrap.classList.add("live");
+    vHint.textContent = "Drag to orbit · scroll or pinch to zoom";
+    V.ready = true;
+    if (pending !== null) { V.showSpecimen(pending); pending = null; }
+    else if (pendingMorph) { V.morphTo(...pendingMorph); pendingMorph = null; }
+  } catch (err) {
+    if (gl) gl.dispose();
+    vHint.textContent = "3D view could not start in this browser; the static render shows the mean shape.";
+  }
+})();
+})();
+</script>
